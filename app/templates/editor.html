@@ -502,9 +502,9 @@
 <div id="toast-msg"></div>
 
 <script>
+const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' : '';
     const currentImageFolder = "{{ current_ms.image_folder if current_ms else 'slepche_116' }}";
     const isAdmin = ("{{ is_admin }}" === "True");
-
     let currentLines = [];
     let selectedLineIndex = null;
     let baseImage = new Image();
