@@ -146,18 +146,19 @@
         </select>
     </div>
 
+    <!-- Кнопки довідки, статистики, словників та авторизації -->
     <div style="display: flex; align-items: center; gap: 5px;">
-        <a href="/docs/about_author" style="text-decoration: none;">
+        <a id="btn-author-link" href="#" style="text-decoration: none;">
             <button class="btn-secondary" style="font-weight: 600; color: #5856d6;" title="Інформація про автора та дослідження">👨‍🏫 Про автора</button>
         </a>
 
-        <a id="btn-doc-link" href="/docs/manuscript_{{ current_ms.id.replace('slepche_', 'odesa_' if current_ms.id == 'slepche_116' else 'sofia_') }}" style="text-decoration: none;">
+        <a id="btn-doc-link" href="#" style="text-decoration: none;">
             <button class="btn-secondary" style="font-weight: 600;" title="Науковий кодикологічний опис рукопису">📖 Про рукопис</button>
         </a>
 
         <button onclick="openStatisticsModal()" class="btn-secondary" title="Статистика пам'ятки">📊 Статистика</button>
         
-        <a href="/docs/user_guide" style="text-decoration: none;">
+        <a id="btn-guide-link" href="#" style="text-decoration: none;">
             <button class="btn-secondary" title="Відкрити інструкцію користувача">ℹ️ Інструкція</button>
         </a>
 
@@ -502,9 +503,11 @@
 <div id="toast-msg"></div>
 
 <script>
-const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' : '';
+    const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' : '';
     const currentImageFolder = "{{ current_ms.image_folder if current_ms else 'slepche_116' }}";
+    const currentMsId = "{{ current_ms.id if current_ms else 'slepche_116' }}";
     const isAdmin = ("{{ is_admin }}" === "True");
+
     let currentLines = [];
     let selectedLineIndex = null;
     let baseImage = new Image();
@@ -519,6 +522,17 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
 
     let isLensMode = false;
     const lensZoom = 2.8;
+
+    function initDocLinks() {
+        const docLink = document.getElementById('btn-doc-link');
+        const guideLink = document.getElementById('btn-guide-link');
+        const authorLink = document.getElementById('btn-author-link');
+        
+        const msDocName = currentMsId === 'slepche_116' ? 'manuscript_odesa_116' : 'manuscript_sofia_1015';
+        if (docLink) docLink.href = `${BASE_URL}/docs/${msDocName}`;
+        if (guideLink) guideLink.href = `${BASE_URL}/docs/user_guide`;
+        if (authorLink) authorLink.href = `${BASE_URL}/docs/about_author`;
+    }
 
     function openFeedbackModal() {
         const modal = document.getElementById('feedback-modal');
@@ -551,7 +565,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
             return;
         }
 
-        fetch('/api/feedback', {
+        fetch(`${BASE_URL}/api/feedback`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, email, subject, message, context: contextInfo })
@@ -585,7 +599,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
 
     function submitAdminLogin() {
         const pwd = document.getElementById('input-admin-password')?.value || '';
-        fetch('/api/login', {
+        fetch(`${BASE_URL}/api/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ password: pwd })
@@ -602,7 +616,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
     }
 
     function logoutAdmin() {
-        fetch('/api/logout', { method: 'POST' })
+        fetch(`${BASE_URL}/api/logout`, { method: 'POST' })
             .then(() => window.location.reload());
     }
 
@@ -614,7 +628,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
     });
 
     function switchCodex(codexId) {
-        fetch(`/api/select-codex/${codexId}`)
+        fetch(`${BASE_URL}/api/select-codex/${codexId}`)
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
@@ -657,7 +671,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
     }
 
     function loadCodexStructure() {
-        fetch('/api/codex-structure')
+        fetch(`${BASE_URL}/api/codex-structure`)
             .then(res => res.json())
             .then(data => {
                 codexStructure = data || { sections: [], categories: {}, parallel_concordance: [] };
@@ -829,7 +843,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
         body.style.display = 'none';
         tbody.innerHTML = '';
 
-        fetch(`/api/collation?orig=${origFolio}&copy=${copyFolio}&only_person=${onlyPerson}`)
+        fetch(`${BASE_URL}/api/collation?orig=${origFolio}&copy=${copyFolio}&only_person=${onlyPerson}`)
             .then(res => res.json())
             .then(data => {
                 if (!data.aligned_rows || data.aligned_rows.length === 0) {
@@ -896,7 +910,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
 
     function toggleDuplicateFromCollation(pageId, lineId, makeDuplicate) {
         if (!isAdmin) return;
-        fetch('/api/set-duplicate', {
+        fetch(`${BASE_URL}/api/set-duplicate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ page_id: pageId, line_id: lineId, is_duplicate: makeDuplicate })
@@ -953,7 +967,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
     }
 
     function loadAllEntitiesIndex() {
-        fetch('/api/all-entities')
+        fetch(`${BASE_URL}/api/all-entities`)
             .then(res => res.json())
             .then(data => {
                 allEntitiesData = (data || []).map(item => {
@@ -1073,7 +1087,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
         loading.style.display = 'block';
         body.style.display = 'none';
 
-        fetch(`/api/statistics?dedup=${dedup ? 1 : 0}`)
+        fetch(`${BASE_URL}/api/statistics?dedup=${dedup ? 1 : 0}`)
             .then(res => res.json())
             .then(stats => {
                 document.getElementById('stat-progress').textContent = `${stats.progress_percent || 0}%`;
@@ -1113,7 +1127,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
     }
 
     function loadLemmasDictionary() {
-        fetch('/api/lemmas')
+        fetch(`${BASE_URL}/api/lemmas`)
             .then(res => res.json())
             .then(data => {
                 const datalist = document.getElementById('lemmas-datalist');
@@ -1145,6 +1159,28 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
         }
     });
 
+    function getScaledCoords(coords, surfaceSize) {
+        if (!coords || !coords.width || !baseImage.width) return coords;
+        
+        let origW = surfaceSize?.w || 0;
+        let origH = surfaceSize?.h || 0;
+
+        if (origW === 0) {
+            origW = 4928;
+            origH = 3264;
+        }
+
+        const scaleRatioX = baseImage.width / origW;
+        const scaleRatioY = baseImage.height / origH;
+
+        return {
+            x: coords.x * scaleRatioX,
+            y: coords.y * scaleRatioY,
+            width: coords.width * scaleRatioX,
+            height: coords.height * scaleRatioY
+        };
+    }
+
     function loadPageData() {
         const selector = document.getElementById('page-selector');
         if (!selector || selector.options.length === 0) return;
@@ -1166,9 +1202,9 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
         checkParallelConcordance(selectedOption.text || '');
 
         baseImage = new Image();
-        baseImage.src = `/static/images/${currentImageFolder}/${imgUrl}`;
+        baseImage.src = `${BASE_URL}/static/images/${currentImageFolder}/${imgUrl}`;
         baseImage.onload = () => {
-            fetch(`/api/page/${pageId}`)
+            fetch(`${BASE_URL}/api/page/${pageId}`)
                 .then(res => res.json())
                 .then(data => {
                     currentLines = data || [];
@@ -1292,28 +1328,6 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
             if (formTitle) formTitle.textContent = 'Анотація імені (person)';
             if (labelLemma) labelLemma.textContent = 'Лема імені [Enter — зберегти]:';
         }
-    }
-
-    function getScaledCoords(coords, surfaceSize) {
-        if (!coords || !coords.width || !baseImage.width) return coords;
-        
-        let origW = surfaceSize?.w || 0;
-        let origH = surfaceSize?.h || 0;
-
-        if (origW === 0) {
-            origW = 4928;
-            origH = 3264;
-        }
-
-        const scaleRatioX = baseImage.width / origW;
-        const scaleRatioY = baseImage.height / origH;
-
-        return {
-            x: coords.x * scaleRatioX,
-            y: coords.y * scaleRatioY,
-            width: coords.width * scaleRatioX,
-            height: coords.height * scaleRatioY
-        };
     }
 
     function selectLine(index) {
@@ -1519,7 +1533,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
             role: (chosenEntityType === 'place' || chosenEntityType === 'status') ? '' : document.getElementById('input-role')?.value || ''
         };
 
-        fetch('/api/save', {
+        fetch(`${BASE_URL}/api/save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1594,7 +1608,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
             role: chosenEntityType === 'place' ? '' : document.getElementById('input-role')?.value || ''
         };
 
-        fetch('/api/batch-save', {
+        fetch(`${BASE_URL}/api/batch-save`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -1706,7 +1720,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
         const query = (document.getElementById('global-search-input')?.value || '').trim();
         if (!query) return;
 
-        fetch(`/api/global-search?q=${encodeURIComponent(query)}`)
+        fetch(`${BASE_URL}/api/global-search?q=${encodeURIComponent(query)}`)
             .then(res => res.json())
             .then(results => {
                 const block = document.getElementById('global-search-results-block');
@@ -1768,9 +1782,9 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
         checkParallelConcordance(selectedOption.text || '');
 
         baseImage = new Image();
-        baseImage.src = `/static/images/${currentImageFolder}/${imgUrl}`;
+        baseImage.src = `${BASE_URL}/static/images/${currentImageFolder}/${imgUrl}`;
         baseImage.onload = () => {
-            fetch(`/api/page/${pageId}`)
+            fetch(`${BASE_URL}/api/page/${pageId}`)
                 .then(res => res.json())
                 .then(data => {
                     currentLines = data || [];
@@ -1789,6 +1803,7 @@ const BASE_URL = window.location.pathname.startsWith('/codicons') ? '/codicons' 
     }
 
     window.onload = () => {
+        initDocLinks();
         loadCodexStructure();
         loadPageData();
         loadLemmasDictionary();
