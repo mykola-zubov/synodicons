@@ -11,7 +11,6 @@ from lxml import etree
 NS = {'tei': 'http://tei-c.org'}
 
 def sanitize_lemma(text: str) -> str:
-    """Очищає лему від пробілів та випадкових латинських літер-двійників (гомогліфів)."""
     if not text:
         return ""
     text = unicodedata.normalize('NFC', text.strip())
@@ -24,7 +23,6 @@ def sanitize_lemma(text: str) -> str:
     return cleaned[0].upper() + cleaned[1:] if len(cleaned) > 0 else cleaned
 
 def normalize_slavic_text(text: str) -> str:
-    """Нормалізує середньовічну південнослов'янську орфографію для пошуку та сортування."""
     if not text:
         return ""
     text = text.lower().strip()
@@ -40,7 +38,6 @@ def normalize_slavic_text(text: str) -> str:
     return text
 
 def extract_status_and_role(node):
-    """Відокремлює статус/титул від імені та автодетектує роль і стать."""
     status_text = ""
     clean_text = ""
     auto_role = ""
@@ -96,13 +93,17 @@ class XmlProcessor:
         self._ensure_initial_backup()
 
     def _load_structure(self):
+        # Шукаємо codex_structure.json у папці манускрипту або у корені data
         struct_path = os.path.join(os.path.dirname(self.xml_path), 'codex_structure.json')
+        if not os.path.exists(struct_path):
+            struct_path = os.path.join(os.path.dirname(os.path.dirname(self.xml_path)), 'codex_structure.json')
+            
         if os.path.exists(struct_path):
             try:
                 with open(struct_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
             except Exception as e:
-                print(f"[ERROR] Не вдалося завантажити codex_structure.json: {e}")
+                print(f"[ERROR] codex_structure.json: {e}")
         return {"sections": [], "categories": {}, "parallel_concordance": [], "page_overrides": {}}
 
     def load_xml(self):
@@ -147,22 +148,20 @@ class XmlProcessor:
         return int(m.group(0)) if m else 0
 
     def _resolve_image_filename(self, raw_img):
-        """Автоматично знаходить файл зображення на диску."""
         if not raw_img:
             return None
-        
         folder_name = os.path.basename(os.path.dirname(self.xml_path))
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(self.xml_path)))
         target_dir = os.path.join(base_dir, 'app', 'static', 'images', folder_name)
 
         if not os.path.exists(target_dir):
-            return raw_img
+            target_dir = os.path.join(base_dir, 'app', 'static', 'images')
+            if not os.path.exists(target_dir):
+                return raw_img
 
-        # 1. Прямий збіг
         if os.path.exists(os.path.join(target_dir, raw_img)):
             return raw_img
 
-        # 2. Пошук файлу за номером
         clean_num = os.path.splitext(raw_img)[0].lstrip('0') or '0'
         for fname in os.listdir(target_dir):
             if fname.lower().endswith(f"_{raw_img.lower()}"):
@@ -244,63 +243,106 @@ class XmlProcessor:
         return pages
 
     def get_page_data(self, page_id):
-        """Суворо ізолює рядки кожної окремої сторінки між її <pb> та наступним <pb>."""
+        """Зчитує рядки сторінки з повною безпекою для вступних і нерозмічених сторінок."""
         lines_data = []
         geo_map = {}
         folio_map = {}
         
-        # 1. Знаходимо surface поточної сторінки
+        surfaces = self.root.xpath('//*[local-name()="surface"]')
         current_surface = None
-        for surf in self.root.xpath('//*[local-name()="surface"]'):
-            s_id = surf.get('{http://www.w3.org/XML/1998/namespace}id') or surf.get('id') or surf.get('xml:id')
-            if s_id == page_id:
+        for surf in surfaces:
+            surf_id = surf.get('{http://www.w3.org/XML/1998/namespace}id') or \
+                      surf.get('{http://w3.org}id') or \
+                      surf.get('id') or \
+                      surf.get('xml:id')
+            if surf_id == page_id:
                 current_surface = surf
                 break
 
-        if current_surface is not None:
-            for tr in current_surface.xpath('.//*[local-name()="zone"][@rendition="TextRegion"]'):
-                tr_subtype = tr.get('subtype') or ''
-                for zone in tr.xpath('.//*[local-name()="zone"][@rendition="Line"]'):
-                    z_id = zone.get('{http://www.w3.org/XML/1998/namespace}id') or zone.get('id') or zone.get('xml:id')
-                    points_str = zone.get('points')
-                    if z_id:
-                        geo_map[z_id] = self._parse_points(points_str)
-                        if tr_subtype:
-                            folio_map[z_id] = tr_subtype
+        # Якщо аркуш створено віртуально (немає в XML) — повертаємо порожній список без помилок
+        if current_surface is None:
+            return lines_data
 
-            for zone in current_surface.xpath('.//*[local-name()="zone"][@rendition="Line"]'):
+        orig_w = 0
+        orig_h = 0
+
+        # 1. Читаємо розміри з graphic
+        for gr in current_surface.xpath('.//*[local-name()="graphic"]'):
+            w_str = (gr.get('width') or '').replace('px', '').strip()
+            h_str = (gr.get('height') or '').replace('px', '').strip()
+            if w_str and h_str:
+                try:
+                    orig_w = int(float(w_str))
+                    orig_h = int(float(h_str))
+                    break
+                except Exception:
+                    pass
+
+        # 2. Якщо в graphic немає — читаємо з surface lrx/lry
+        if orig_w == 0:
+            lrx = current_surface.get('lrx')
+            lry = current_surface.get('lry')
+            if lrx and lry:
+                try:
+                    orig_w = int(float(lrx))
+                    orig_h = int(float(lry))
+                except Exception:
+                    pass
+
+        text_regions = current_surface.xpath('.//*[local-name()="zone"][@rendition="TextRegion"]')
+        for tr in text_regions:
+            tr_subtype = tr.get('subtype') or ''
+            for zone in tr.xpath('.//*[local-name()="zone"][@rendition="Line"]'):
                 z_id = zone.get('{http://www.w3.org/XML/1998/namespace}id') or zone.get('id') or zone.get('xml:id')
-                if z_id and z_id not in geo_map:
-                    geo_map[z_id] = self._parse_points(zone.get('points'))
+                points_str = zone.get('points')
+                if z_id:
+                    geo_map[z_id] = self._parse_points(points_str)
+                    if tr_subtype:
+                        folio_map[z_id] = tr_subtype
 
-        # 2. Знаходимо цільовий <pb> для цієї сторінки
-        pb_list = self.root.xpath('//*[local-name()="pb"]')
+        for zone in current_surface.xpath('.//*[local-name()="zone"][@rendition="Line"]'):
+            z_id = zone.get('{http://www.w3.org/XML/1998/namespace}id') or zone.get('id') or zone.get('xml:id')
+            if z_id and z_id not in geo_map:
+                geo_map[z_id] = self._parse_points(zone.get('points'))
+
+        if orig_w == 0 and geo_map:
+            orig_w = max((g['x'] + g['width']) for g in geo_map.values())
+            orig_h = max((g['y'] + g['height']) for g in geo_map.values())
+
+        if orig_w == 0:
+            orig_w = 4928
+            orig_h = 3264
+
+        pb_elements = self.root.xpath('//*[local-name()="pb"]')
         target_pb = None
-        for pb in pb_list:
-            facs_ref = (pb.get('facs') or '').replace('#', '')
-            if facs_ref == page_id:
+        for pb in pb_elements:
+            facs_ref = pb.get('facs', '')
+            if facs_ref == f"#{page_id}" or facs_ref == page_id:
                 target_pb = pb
                 break
 
-        # Якщо для цієї сторінки немає <pb> (наприклад, порожня обкладинка чи скан без рядків) — повертаємо 0 рядків!
         if target_pb is None:
             return lines_data
 
-        # 3. Збираємо ТІЛЬКИ ті <lb>, які йдуть строго після target_pb до наступного <pb>
+        parent_div = target_pb.getparent()
+        if parent_div is None:
+            return lines_data
+            
+        lb_elements = parent_div.xpath('.//*[local-name()="lb"]')
         valid_lbs = []
         started = False
-        for el in self.root.xpath('//*[local-name()="pb" or local-name()="lb"]'):
-            tag = el.tag.split('}')[-1]
-            if tag == 'pb':
-                if el == target_pb:
-                    started = True
-                elif started:
-                    # Дійшли до наступного <pb> — зупиняємось!
-                    break
-            elif tag == 'lb' and started:
-                valid_lbs.append(el)
+        for child in parent_div.iter():
+            if child == target_pb:
+                started = True
+                continue
+            if started and child.tag.split('}')[-1] == 'pb':
+                break
+            if started and child.tag.split('}')[-1] == 'lb':
+                valid_lbs.append(child)
 
-        # 4. Обробляємо лише справжні рядки цієї сторінки
+        if not valid_lbs:
+            valid_lbs = lb_elements
+
         for lb in valid_lbs:
             facs_ref = (lb.get('facs') or '').replace('#', '')
             line_number = lb.get('n') or "—"
@@ -355,6 +397,7 @@ class XmlProcessor:
                 'folio': line_folio,
                 'line_number': line_number,
                 'coordinates': geo_map.get(facs_ref, {'x': 0, 'y': 0, 'width': 0, 'height': 0}),
+                'surface_size': {'w': orig_w, 'h': orig_h},
                 'entity_type': entity_type,
                 'status_title': status_title,
                 'text': entity_text,
@@ -367,7 +410,6 @@ class XmlProcessor:
         return lines_data
 
     def update_entity(self, page_id, line_id, data):
-        """Оновлює текст, наукові атрибути, TEI @hand та TEI @ana='#duplicate'."""
         pb_elements = self.root.xpath(f'//*[local-name()="pb"][@facs="#{page_id}" or @facs="{page_id}"]')
         if not pb_elements:
             return False

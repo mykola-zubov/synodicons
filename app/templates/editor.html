@@ -130,7 +130,7 @@
         }
     </style>
 </head>
-<body data-is-admin="{{ '1' if is_admin else '0' }}" data-image-folder="{{ current_ms.image_folder if current_ms else 'slepche_116' }}">
+<body>
 
 <header>
     <div style="display: flex; align-items: center; gap: 10px;">
@@ -146,10 +146,8 @@
         </select>
     </div>
 
-<!-- Кнопки довідки, статистики, словників та автора (відкриваються в тій самій вкладці) -->
     <div style="display: flex; align-items: center; gap: 5px;">
-
-                <a href="/docs/about_author" style="text-decoration: none;">
+        <a href="/docs/about_author" style="text-decoration: none;">
             <button class="btn-secondary" style="font-weight: 600; color: #5856d6;" title="Інформація про автора та дослідження">👨‍🏫 Про автора</button>
         </a>
 
@@ -159,16 +157,9 @@
 
         <button onclick="openStatisticsModal()" class="btn-secondary" title="Статистика пам'ятки">📊 Статистика</button>
         
-        <a href="/api/export/anthroponyms" style="text-decoration: none;">
-            <button class="btn-secondary" style="font-weight: 600; color: #0071e3;" title="Частотний словник антропонімів">📥 Словник імен</button>
-        </a>
-        <a href="/api/export/toponyms" style="text-decoration: none;">
-            <button class="btn-secondary" style="font-weight: 600; color: #2e7d32;" title="Словник топонімів та ойконімів">🗺️ Топоніми</button>
-        </a>
         <a href="/docs/user_guide" style="text-decoration: none;">
             <button class="btn-secondary" title="Відкрити інструкцію користувача">ℹ️ Інструкція</button>
         </a>
-
 
         <button onclick="openFeedbackModal()" class="btn-secondary" style="font-weight: 600;" title="Надіслати відгук чи пропозицію автору">✉️ Зв'язок</button>
 
@@ -360,7 +351,7 @@
 
         <div class="workspace" id="global-search-results-block" style="display: none; max-height: 180px; overflow-y: auto; background: #fffde7; border-color: #ffd600;">
             <h3 style="margin-top: 0; display: flex; justify-content: space-between; font-size: 12px;">
-                <span>Знайдено в рукописі</span>
+                <span>Знайдено в кодику</span>
                 <button onclick="document.getElementById('global-search-results-block').style.display='none'" style="background: none; border: none; color: #ff3b30; cursor: pointer; font-size: 12px;">✕ Закрити</button>
             </h3>
             <table style="width: 100%;">
@@ -511,8 +502,8 @@
 <div id="toast-msg"></div>
 
 <script>
-    const currentImageFolder = document.body.dataset.imageFolder || 'slepche_116';
-    const isAdmin = document.body.dataset.isAdmin === '1';
+    const currentImageFolder = "{{ current_ms.image_folder if current_ms else 'slepche_116' }}";
+    const isAdmin = ("{{ is_admin }}" === "True");
 
     let currentLines = [];
     let selectedLineIndex = null;
@@ -1098,7 +1089,7 @@
                     } else {
                         stats.top_lemmas.forEach(([lemma, count]) => {
                             const tr = document.createElement('tr');
-                            tr.title = `Знайти всі згадки "${lemma}" у рукописі`;
+                            tr.title = `Знайти всі згадки "${lemma}" у кодику`;
                             tr.onclick = () => {
                                 closeStatisticsModal();
                                 const sInp = document.getElementById('global-search-input');
@@ -1191,9 +1182,13 @@
                 });
         };
         baseImage.onerror = () => {
-            currentLines = [];
-            renderTable();
-            drawCanvas(null);
+            if (baseImage.src.includes(`/${currentImageFolder}/`)) {
+                baseImage.src = baseImage.src.replace(`/${currentImageFolder}/`, '/');
+            } else {
+                currentLines = [];
+                renderTable();
+                drawCanvas(null);
+            }
         };
     }
 
@@ -1213,7 +1208,7 @@
         panOffset.x = (fullCanvas.width - baseImage.width * zoomScale) / 2;
         panOffset.y = (fullCanvas.height - baseImage.height * zoomScale) / 2;
 
-        drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null);
+        drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null, selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].surface_size : null);
     }
 
     function zoomManual(factor) {
@@ -1230,7 +1225,7 @@
         panOffset.y = cursorY - (cursorY - panOffset.y) * (newZoom / zoomScale);
         zoomScale = newZoom;
 
-        drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null);
+        drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null, selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].surface_size : null);
     }
 
     function getBadgeClass(type) {
@@ -1299,6 +1294,28 @@
         }
     }
 
+    function getScaledCoords(coords, surfaceSize) {
+        if (!coords || !coords.width || !baseImage.width) return coords;
+        
+        let origW = surfaceSize?.w || 0;
+        let origH = surfaceSize?.h || 0;
+
+        if (origW === 0) {
+            origW = 4928;
+            origH = 3264;
+        }
+
+        const scaleRatioX = baseImage.width / origW;
+        const scaleRatioY = baseImage.height / origH;
+
+        return {
+            x: coords.x * scaleRatioX,
+            y: coords.y * scaleRatioY,
+            width: coords.width * scaleRatioX,
+            height: coords.height * scaleRatioY
+        };
+    }
+
     function selectLine(index) {
         if (selectedLineIndex !== null) {
             const prevRow = document.getElementById(`row-${selectedLineIndex}`);
@@ -1347,11 +1364,12 @@
 
         if (isAdmin && lemInp) setTimeout(() => lemInp.focus(), 50);
 
-        smartFocusOnCoordinates(line.coordinates);
-        drawCanvas(line.coordinates);
+        smartFocusOnCoordinates(line.coordinates, line.surface_size);
+        drawCanvas(line.coordinates, line.surface_size);
     }
 
-    function smartFocusOnCoordinates(coords) {
+    function smartFocusOnCoordinates(rawCoords, surfaceSize) {
+        const coords = getScaledCoords(rawCoords, surfaceSize);
         if (!coords || !coords.width) return;
         const wrapper = document.getElementById('canvas-wrapper');
         if (!wrapper) return;
@@ -1361,7 +1379,7 @@
         panOffset.y = (wrapper.clientHeight / 2) - (lineCenterY * zoomScale);
     }
 
-    function drawCanvas(coords) {
+    function drawCanvas(rawCoords, surfaceSize) {
         const fullCanvas = document.getElementById('manuscript-canvas');
         const wrapper = document.getElementById('canvas-wrapper');
         if (!fullCanvas || !wrapper) return;
@@ -1384,6 +1402,8 @@
         fullCtx.scale(zoomScale, zoomScale);
 
         fullCtx.drawImage(baseImage, 0, 0, baseImage.width, baseImage.height);
+
+        const coords = getScaledCoords(rawCoords, surfaceSize);
 
         if (coords && coords.width > 0) {
             fullCtx.strokeStyle = '#ff3b30';
@@ -1443,7 +1463,7 @@
         if (isPanning) {
             panOffset.x = e.clientX - panStart.x;
             panOffset.y = e.clientY - panStart.y;
-            drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null);
+            drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null, selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].surface_size : null);
         }
 
         if (isLensMode && lens && mouseX >= 0 && mouseX <= rect.width && mouseY >= 0 && mouseY <= rect.height) {
@@ -1610,9 +1630,9 @@
                 }
 
                 renderTable();
-                showToast(`⚡ Пакетно оновлено: "${targetText}" (${resData.updated_count} слів у рукописі!)`);
+                showToast(`⚡ Пакетно оновлено: "${targetText}" (${resData.updated_count} слів у кодику!)`);
             } else {
-                showToast('Помилка пакетного оновлення.', true);
+                showToast(resData.message || 'Помилка пакетного оновлення.', true);
             }
         })
         .catch(() => showToast('Мережева помилка пакетного оновлення.', true));
@@ -1695,7 +1715,7 @@
                 tbody.innerHTML = '';
 
                 if (results.length === 0) {
-                    showToast('Нічого не знайдено в рукописі.', true);
+                    showToast('Нічого не знайдено в кодику.', true);
                     block.style.display = 'none';
                     return;
                 }
