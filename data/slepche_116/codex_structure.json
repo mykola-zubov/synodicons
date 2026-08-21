@@ -1,0 +1,304 @@
+{
+  "metadata": {
+    "title": "Слепченски кодик 1/116",
+    "dating": "XVI–XVII ст.",
+    "total_folios": 193,
+    "source_article": "Zubov M. (2021). Voprosy Onomastiki, 18(3), 38–56."
+  },
+  "categories": {
+    "diaconicon": {
+      "label": "Ієрархія та чин дяконства",
+      "color": "#ff3b30",
+      "badge": "🔴 Дяконство",
+      "count_in_deduplication": true
+    },
+    "male_orig": {
+      "label": "Чоловічий пом'янник (Автентичний оригінал XVI ст.)",
+      "color": "#0071e3",
+      "badge": "🔵 Чол. Оригінал (Тип 1)",
+      "is_copy": false,
+      "count_in_deduplication": true
+    },
+    "female_orig": {
+      "label": "Жіночий пом'янник (Автентичний оригінал XVI ст.)",
+      "color": "#34c759",
+      "badge": "🟢 Жін. Оригінал (Тип 1)",
+      "is_copy": false,
+      "count_in_deduplication": true
+    },
+    "male_copy_parallel": {
+      "label": "Чоловічий пом'янник (Паралельна копія писця ĩ до арк. 161–176)",
+      "color": "#5ac8fa",
+      "badge": "📋 Чол. Копія-дубль (Тип 2)",
+      "is_copy": true,
+      "has_extant_original": true,
+      "count_in_deduplication": false
+    },
+    "male_copy_witness": {
+      "label": "Чоловічий пом'янник (Копія писця ĩ — єдиний свідок втраченого оригіналу)",
+      "color": "#0040dd",
+      "badge": "📋 Чол. Копія (Свідок)",
+      "is_copy": true,
+      "has_extant_original": false,
+      "count_in_deduplication": true
+    },
+    "female_copy_parallel": {
+      "label": "Жіночий пом'янник (Паралельна копія писця ĩ до арк. 177–193, 147–155)",
+      "color": "#30b0c7",
+      "badge": "📋 Жін. Копія-дубль (Тип 2)",
+      "is_copy": true,
+      "has_extant_original": true,
+      "count_in_deduplication": false
+    },
+    "additions_late": {
+      "label": "Позасистемні пізні приписки XVII ст.",
+      "color": "#8e8e93",
+      "badge": "⚪ Приписки",
+      "is_copy": false,
+      "count_in_deduplication": true
+    }
+  },
+  "sections": [
+    {
+      "id": "sec_diaconicon_1",
+      "title": "Чин поминання та ієрархія (Частина 1)",
+      "category": "diaconicon",
+      "folio_start_num": 1,
+      "folio_end_num": 9,
+      "header_type": "Тип 1",
+      "scribe": "Основний писець XVI ст."
+    },
+    {
+      "id": "sec_male_copy_1",
+      "title": "Чоловічий пом'янник (Копія арк. 161–168об із перестановкою)",
+      "category": "male_copy_parallel",
+      "folio_start_num": 10,
+      "folio_end_num": 17,
+      "header_type": "Тип 2 (А с̏є помѣ́ник бѣ́л̾цѥм, сигнатури з ĩ)",
+      "scribe": "Писець-копіїст ĩ"
+    },
+    {
+      "id": "sec_intercalated_18",
+      "title": "Вставний аркуш 18",
+      "category": "additions_late",
+      "folio_start_num": 18,
+      "folio_end_num": 18,
+      "header_type": "Вставка",
+      "scribe": "Інша рука"
+    },
+    {
+      "id": "sec_male_copy_2",
+      "title": "Чоловічий пом'янник (Копія арк. 169–176об зі зсувом рядків)",
+      "category": "male_copy_parallel",
+      "folio_start_num": 19,
+      "folio_end_num": 26,
+      "header_type": "Тип 2",
+      "scribe": "Писець-копіїст ĩ"
+    },
+    {
+      "id": "sec_diaconicon_2",
+      "title": "Пом'янник священнослужителів (Вставка в середині)",
+      "category": "diaconicon",
+      "folio_start_num": 27,
+      "folio_end_num": 38,
+      "header_type": "Дяконство",
+      "scribe": "Основний писець XVI ст."
+    },
+    {
+      "id": "sec_male_copy_unique",
+      "title": "Чоловічий пом'янник (Копія втраченого продовження оригіналу)",
+      "category": "male_copy_witness",
+      "folio_start_num": 39,
+      "folio_end_num": 85,
+      "header_type": "Тип 2",
+      "scribe": "Писець-копіїст ĩ"
+    },
+    {
+      "id": "sec_female_copy",
+      "title": "Жіночий пом'янник (Копія арк. 177–193об та 147–155об)",
+      "category": "female_copy_parallel",
+      "folio_start_num": 86,
+      "folio_end_num": 116,
+      "header_type": "Тип 2",
+      "scribe": "Писець-копіїст ĩ"
+    },
+    {
+      "id": "sec_additions_late",
+      "title": "Позасистемні розкидані приписки на вільних аркушах",
+      "category": "additions_late",
+      "folio_start_num": 117,
+      "folio_end_num": 146,
+      "header_type": "Без заголовка (пізні руки)",
+      "scribe": "Різні руки XVII ст."
+    },
+    {
+      "id": "sec_female_orig_cont",
+      "title": "Жіночий пом'янник (Оригінал, 'провисле' закінчення арк. 193об)",
+      "category": "female_orig",
+      "folio_start_num": 147,
+      "folio_end_num": 155,
+      "header_type": "Тип 1 (Кватерніони 13–14)",
+      "scribe": "Основний писець XVI ст."
+    },
+    {
+      "id": "sec_diaconicon_3",
+      "title": "Фрагмент дяконства",
+      "category": "diaconicon",
+      "folio_start_num": 156,
+      "folio_end_num": 160,
+      "header_type": "Тип 1",
+      "scribe": "Основний писець XVI ст."
+    },
+    {
+      "id": "sec_male_orig",
+      "title": "Чоловічий пом'янник (Автентичний оригінал)",
+      "category": "male_orig",
+      "folio_start_num": 161,
+      "folio_end_num": 176,
+      "header_type": "Тип 1 (Сигнатури ѳ҃–ı҃)",
+      "scribe": "Основний писець XVI ст."
+    },
+    {
+      "id": "sec_female_orig",
+      "title": "Жіночий пом'янник (Автентичний оригінал)",
+      "category": "female_orig",
+      "folio_start_num": 177,
+      "folio_end_num": 193,
+      "header_type": "Тип 1 (Сигнатури а҃ı–в҃ı)",
+      "scribe": "Основний писець XVI ст."
+    }
+  ],
+  "parallel_concordance": [
+    {
+      "copy_folio": "10a",
+      "orig_folio": "161a",
+      "description": "Арк. 10а є копією оригіналу на арк. 161а (пропущено титули кѵр)"
+    },
+    {
+      "copy_folio": "10b",
+      "orig_folio": "161b",
+      "description": "Арк. 10об є копією оригіналу на арк. 161об (пропущено ченця Дамаскіна, зсув на 1 рядок)"
+    },
+    {
+      "copy_folio": "11a",
+      "orig_folio": "162a",
+      "description": "Арк. 11а є копією оригіналу на арк. 162а"
+    },
+    {
+      "copy_folio": "11b",
+      "orig_folio": "162b",
+      "description": "Арк. 11об є копією оригіналу на арк. 162об"
+    },
+    {
+      "copy_folio": "12a",
+      "orig_folio": "167a",
+      "description": "Арк. 12а є копією оригіналу на арк. 167а (внаслідок перестановки зошитів)"
+    },
+    {
+      "copy_folio": "12b",
+      "orig_folio": "167b",
+      "description": "Арк. 12об є копією оригіналу на арк. 167об"
+    },
+    {
+      "copy_folio": "13a",
+      "orig_folio": "168a",
+      "description": "Арк. 13а є копією оригіналу на арк. 168а"
+    },
+    {
+      "copy_folio": "13b",
+      "orig_folio": "168b",
+      "description": "Арк. 13об є копією оригіналу на арк. 168об"
+    },
+    {
+      "copy_folio": "14a",
+      "orig_folio": "163a",
+      "description": "Арк. 14а є копією оригіналу на арк. 163а"
+    },
+    {
+      "copy_folio": "14b",
+      "orig_folio": "163b",
+      "description": "Арк. 14об є копією оригіналу на арк. 163об"
+    },
+    {
+      "copy_folio": "15a",
+      "orig_folio": "164a",
+      "description": "Арк. 15а є копією оригіналу на арк. 164а"
+    },
+    {
+      "copy_folio": "15b",
+      "orig_folio": "164b",
+      "description": "Арк. 15об є копією оригіналу на арк. 164об"
+    },
+    {
+      "copy_folio": "16a",
+      "orig_folio": "165a",
+      "description": "Арк. 16а є копією оригіналу на арк. 165а"
+    },
+    {
+      "copy_folio": "16b",
+      "orig_folio": "165b",
+      "description": "Арк. 16об є копією оригіналу на арк. 165об"
+    },
+    {
+      "copy_folio": "17a",
+      "orig_folio": "166a",
+      "description": "Арк. 17а є копією оригіналу на арк. 166а (вписано кюрѹ)"
+    },
+    {
+      "copy_folio": "17b",
+      "orig_folio": "166b",
+      "description": "Арк. 17об є копією оригіналу на арк. 166об"
+    },
+    {
+      "copy_folio": "19a",
+      "orig_folio": "169a",
+      "description": "Арк. 19а є копією оригіналу на арк. 169а"
+    },
+    {
+      "copy_folio": "19b",
+      "orig_folio": "169b",
+      "description": "Арк. 19об є копією оригіналу на арк. 169об (початок прогресивного зсуву рядків)"
+    },
+    {
+      "copy_folio": "96a",
+      "orig_folio": "148b",
+      "description": "Арк. 96а (копія) підтягує записи з оригіналу на арк. 148об та 178об"
+    }
+  ],
+"page_overrides": {
+    "extra_p001": {
+      "label": "1a (Титул)",
+      "image": "p001.jpg",
+      "folio_num": 1
+    },
+    "extra_p002": {
+      "label": "1b–2a",
+      "image": "p002.jpg",
+      "folio_num": 1
+    },
+    "extra_p171": {
+      "label": "156b–157a",
+      "image": "p171.jpg",
+      "folio_num": 156
+    },
+    "extra_p172": {
+      "label": "157b–158a",
+      "image": "p172.jpg",
+      "folio_num": 157
+    },
+    "extra_p173": {
+      "label": "158b–159a",
+      "image": "p173.jpg",
+      "folio_num": 158
+    },
+    "extra_p174": {
+      "label": "159b–160a",
+      "image": "p174.jpg",
+      "folio_num": 159
+    },
+    "155b": {
+      "label": "155b–156a",
+      "folio_num": 155
+    }
+  }
+}

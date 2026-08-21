@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Довідкові матеріали: Слепченський пом'яник</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Georgia, serif;
+            line-height: 1.7;
+            color: #1d1d1f;
+            background: #fbfbfd;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #d2d2d7;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #1d1d1f;
+        }
+        .btn-back {
+            background: #0071e3;
+            color: white;
+            text-decoration: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: background 0.15s;
+        }
+        .btn-back:hover { background: #0077ed; }
+
+        .content-container {
+            max-width: 860px;
+            margin: 30px auto 60px;
+            background: #ffffff;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            padding: 40px 48px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+
+        h1 { font-size: 26px; border-bottom: 2px solid #e5e5e7; padding-bottom: 12px; margin-top: 0; color: #1d1d1f; line-height: 1.3; }
+        h2 { font-size: 20px; color: #0071e3; margin-top: 36px; border-bottom: 1px solid #f0f0f2; padding-bottom: 6px; }
+        h3 { font-size: 16px; color: #1d1d1f; margin-top: 24px; }
+        
+        p, li { font-size: 15px; color: #333336; }
+        a { color: #0071e3; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 14px; }
+        th, td { border: 1px solid #d2d2d7; padding: 8px 12px; text-align: left; }
+        th { background: #f5f5f7; font-weight: 600; }
+        tr:nth-child(even) { background: #fafafc; }
+
+        code { background: #f0f0f2; padding: 2px 6px; border-radius: 4px; font-size: 13px; font-family: ui-monospace, Menlo, monospace; color: #d32f2f; }
+        pre { background: #1c1c1e; color: #f5f5f7; padding: 14px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+        pre code { background: none; color: inherit; padding: 0; }
+
+        hr { border: none; border-top: 1px solid #e5e5e7; margin: 30px 0; }
+        
+        img { max-width: 100%; border-radius: 8px; border: 1px solid #e5e5e7; margin: 15px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-title">📖 Цифрова лабораторія для роботи з македонськими кодиками XVI-XVII ст.</div>
+    <a href="/" class="btn-back">← Повернутися до редактора</a>
+</header>
+
+<div class="content-container">
+    {{ content | safe }}
+</div>
+
+</body>
+</html>

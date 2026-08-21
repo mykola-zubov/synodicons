@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактор Синодика: Слепченський монастир</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 0; padding: 10px 16px; background: #f5f5f7; display: flex; flex-direction: column; height: 97vh; }
+        header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px; border-bottom: 1px solid #e5e5e7; flex-wrap: wrap; gap: 8px; }
+        
+        #codex-map-wrapper {
+            margin-top: 6px;
+            background: #fff;
+            border: 1px solid #d2d2d7;
+            border-radius: 6px;
+            padding: 5px 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+        #codex-timeline-bar {
+            position: relative;
+            height: 14px;
+            border-radius: 4px;
+            display: flex;
+            overflow: hidden;
+            cursor: pointer;
+            background: #e5e5e7;
+        }
+        .codex-segment { height: 100%; transition: opacity 0.15s; }
+        .codex-segment:hover { opacity: 0.8; filter: brightness(1.1); }
+        #codex-map-indicator {
+            position: absolute;
+            top: -2px;
+            width: 4px;
+            height: 18px;
+            background: #ffffff;
+            border: 1px solid #1d1d1f;
+            border-radius: 2px;
+            box-shadow: 0 0 4px rgba(0,0,0,0.5);
+            pointer-events: none;
+            transition: left 0.2s ease;
+            z-index: 10;
+        }
+
+        #parallel-banner {
+            display: none;
+            background: #e3f2fd;
+            border: 1px solid #90caf9;
+            border-radius: 6px;
+            padding: 5px 10px;
+            font-size: 12px;
+            color: #0d47a1;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .main-container { 
+            display: grid; 
+            grid-template-columns: minmax(0, 1fr) 240px 300px; 
+            gap: 10px; 
+            margin-top: 6px; 
+            flex: 1; 
+            height: calc(100vh - 120px); 
+            overflow: hidden; 
+        }
+
+        .panel-left { display: flex; flex-direction: column; gap: 6px; background: transparent; border: none; overflow: hidden; height: 100%; }
+        .panel-middle { display: flex; flex-direction: column; background: #fff; border-radius: 8px; border: 1px solid #d2d2d7; padding: 8px; height: 100%; box-sizing: border-box; overflow: hidden; }
+        .panel-right { display: flex; flex-direction: column; gap: 8px; height: 100%; overflow: hidden; }
+        .panel-right .workspace:first-child { flex: 1; overflow-y: auto; }
+        .panel-right .workspace:last-child { flex-shrink: 0; }
+
+        .workspace { background: #fff; border-radius: 8px; border: 1px solid #d2d2d7; padding: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+        th, td { text-align: left; padding: 5px 4px; border-bottom: 1px solid #e5e5e7; font-size: 12px; }
+        tr.selected { background-color: #e3f2fd; font-weight: bold; }
+        tr { cursor: pointer; }
+        .form-group { margin-bottom: 6px; display: flex; flex-direction: column; gap: 2px; }
+        label { font-size: 11px; color: #86868b; font-weight: 600; }
+        input, select, textarea { padding: 4px 6px; border: 1px solid #d2d2d7; border-radius: 4px; font-size: 12px; font-family: inherit; }
+        button { background: #0071e3; color: white; border: none; padding: 5px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        button:hover { background: #0077ed; }
+        .btn-secondary { background: #e8e8ed; color: #1d1d1f; }
+        .btn-secondary:hover { background: #d2d2d7; }
+        .btn-batch { background: #34c759; color: white; margin-top: 3px; }
+        .btn-batch:hover { background: #2db34e; }
+
+        .tag-badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 9px; font-weight: 600; text-transform: uppercase; }
+        .tag-person { background: #e3f2fd; color: #0071e3; }
+        .tag-place { background: #e8f5e9; color: #2e7d32; }
+        .tag-status { background: #fff3e0; color: #e65100; }
+        .tag-unclear { background: #f5f5f7; color: #86868b; }
+        .hand-badge { font-size: 10px; margin-right: 3px; }
+
+        #canvas-wrapper { position: relative; width: 100%; flex: 1; background: #1c1c1e; border-radius: 8px; border: 1px solid #d2d2d7; overflow: hidden; cursor: grab; }
+        #canvas-wrapper.grabbing { cursor: grabbing; }
+        #canvas-wrapper.lens-mode { cursor: crosshair; }
+        #manuscript-canvas { display: block; }
+        #crop-canvas { border: 1px solid #e5e5e7; border-radius: 4px; max-width: 100%; max-height: 90px; width: auto; height: auto; display: inline-block; }
+
+        .magnifier { display: none; position: absolute; width: 220px; height: 220px; border: 3px solid #0071e3; border-radius: 50%; box-shadow: 0 8px 24px rgba(0,0,0,0.4); pointer-events: none; background-repeat: no-repeat; z-index: 999; }
+        .zoom-controls { position: absolute; bottom: 10px; left: 10px; display: flex; gap: 4px; z-index: 100; background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(8px); padding: 3px; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
+        .zoom-btn { background: #ffffff; color: #1d1d1f; border: 1px solid #d2d2d7; padding: 4px 8px; font-weight: 600; border-radius: 4px; cursor: pointer; font-size: 11px; }
+        .zoom-btn:hover { background: #f5f5f7; }
+        .zoom-btn.active { background: #0071e3; color: white; border-color: #0071e3; }
+
+        .index-list-container { flex: 1; overflow-y: auto; margin-top: 4px; border-top: 1px solid #e5e5e7; }
+        .index-item { padding: 4px 2px; border-bottom: 1px solid #f0f0f2; cursor: pointer; display: flex; align-items: center; justify-content: space-between; font-size: 12px; }
+        .index-item:hover { background-color: #f5f5f7; }
+        .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 5px; flex-shrink: 0; }
+        .dot-done { background: #34c759; }
+        .dot-empty { background: #d2d2d7; }
+
+        #toast-msg { position: fixed; bottom: 16px; right: 16px; padding: 8px 16px; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 500; z-index: 10000; transition: opacity 0.25s ease, transform 0.25s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.18); pointer-events: none; opacity: 0; transform: translateY(10px); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(4px); z-index: 20000; justify-content: center; align-items: center; }
+        .modal-content { background: #fff; border-radius: 12px; width: 480px; max-width: 90%; padding: 18px; box-shadow: 0 12px 32px rgba(0,0,0,0.2); }
+        
+        .collation-modal-content {
+            background: #fff;
+            border-radius: 12px;
+            width: 860px;
+            max-width: 95%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            padding: 18px;
+            box-shadow: 0 16px 40px rgba(0,0,0,0.25);
+        }
+    </style>
+</head>
+<body data-is-admin="{{ '1' if is_admin else '0' }}" data-image-folder="{{ current_ms.image_folder if current_ms else 'slepche_116' }}">
+
+<header>
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <div>
+            <h2 style="margin: 0 0 2px 0; font-size: 17px;" id="header-ms-title">{{ current_ms.title }}</h2>
+            <span style="font-size: 11px; color: #86868b;">{{ current_ms.archive }} • TEI P5</span>
+        </div>
+        
+        <select id="codex-switcher" onchange="switchCodex(this.value)" style="font-weight: 600; color: #0071e3; border: 1px solid #0071e3; padding: 4px 8px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+            {% for mid, m in manuscripts.items() %}
+            <option value="{{ mid }}" {% if mid == active_ms_id %}selected{% endif %}>{{ m.short_title }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+<!-- Кнопки довідки, статистики, словників та автора (відкриваються в тій самій вкладці) -->
+    <div style="display: flex; align-items: center; gap: 5px;">
+
+                <a href="/docs/about_author" style="text-decoration: none;">
+            <button class="btn-secondary" style="font-weight: 600; color: #5856d6;" title="Інформація про автора та дослідження">👨‍🏫 Про автора</button>
+        </a>
+
+        <a id="btn-doc-link" href="/docs/manuscript_{{ current_ms.id.replace('slepche_', 'odesa_' if current_ms.id == 'slepche_116' else 'sofia_') }}" style="text-decoration: none;">
+            <button class="btn-secondary" style="font-weight: 600;" title="Науковий кодикологічний опис рукопису">📖 Про рукопис</button>
+        </a>
+
+        <button onclick="openStatisticsModal()" class="btn-secondary" title="Статистика пам'ятки">📊 Статистика</button>
+        
+        <a href="/api/export/anthroponyms" style="text-decoration: none;">
+            <button class="btn-secondary" style="font-weight: 600; color: #0071e3;" title="Частотний словник антропонімів">📥 Словник імен</button>
+        </a>
+        <a href="/api/export/toponyms" style="text-decoration: none;">
+            <button class="btn-secondary" style="font-weight: 600; color: #2e7d32;" title="Словник топонімів та ойконімів">🗺️ Топоніми</button>
+        </a>
+        <a href="/docs/user_guide" style="text-decoration: none;">
+            <button class="btn-secondary" title="Відкрити інструкцію користувача">ℹ️ Інструкція</button>
+        </a>
+
+
+        <button onclick="openFeedbackModal()" class="btn-secondary" style="font-weight: 600;" title="Надіслати відгук чи пропозицію автору">✉️ Зв'язок</button>
+
+        {% if is_admin %}
+        <button onclick="logoutAdmin()" class="btn-secondary" style="color: #34c759; font-weight: 600;" title="Ви увійшли як автор (редагування увімкнено)">🔓 Вихід</button>
+        {% else %}
+        <button onclick="openLoginModal()" class="btn-secondary" style="font-weight: 600;" title="Вхід для автора / редагування">🔑 Вхід</button>
+        {% endif %}
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 4px;">
+        <label style="font-size: 12px; font-weight: 600; color: #1d1d1f;">Сторінка: </label>
+        <button onclick="navigatePage('start')" title="В початок" style="padding: 2px 6px; font-size: 11px; background: #e8e8ed; color: #1d1d1f;">«</button>
+        <button onclick="navigatePage('prev')" title="Назад" style="padding: 2px 8px; font-size: 11px; background: #e8e8ed; color: #1d1d1f;">‹ Назад</button>
+        
+        <select id="page-selector" onchange="loadPageData()" style="padding: 3px; font-size: 12px; font-weight: 500;">
+            {% for p in pages %}
+            <option value="{{ p.id }}" data-img="{{ p.image }}" data-folionum="{{ p.folio_num }}">{{ p.label }}</option>
+            {% endfor %}
+        </select>
+        
+        <button onclick="navigatePage('next')" title="Вперед" style="padding: 2px 8px; font-size: 11px; background: #e8e8ed; color: #1d1d1f;">Вперед ›</button>
+        <button onclick="navigatePage('end')" title="В кінець" style="padding: 2px 6px; font-size: 11px; background: #e8e8ed; color: #1d1d1f;">»</button>
+    </div>
+    
+    <div style="display: flex; align-items: center; gap: 4px;">
+        <input type="text" id="global-search-input" placeholder="Пошук..." style="padding: 3px 6px; width: 115px; border: 1px solid #d2d2d7; border-radius: 4px; font-size: 12px;">
+        <button onclick="executeGlobalSearch()" style="padding: 3px 8px; background: #0071e3; color: white;">Знайти</button>
+    </div>
+</header>
+
+<div id="codex-map-wrapper">
+    <div style="display: flex; justify-content: space-between; font-size: 10px; color: #86868b; font-weight: 600;">
+        <span>Шкала структури кодика:</span>
+        <span id="codex-hover-info">Наведіть на шкалу для інформації про розділ</span>
+    </div>
+    <div id="codex-timeline-bar">
+        <div id="codex-map-indicator"></div>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="panel-left">
+        <div id="parallel-banner">
+            <span id="parallel-desc"></span>
+            <div style="display: flex; gap: 4px;">
+                <button id="parallel-collate-btn" style="background: #34c759; color: white; padding: 2px 8px; font-size: 11px; font-weight: 600;">⚖️ Зіставити пліч-о-пліч</button>
+                <button id="parallel-jump-btn" style="background: #0071e3; color: white; padding: 2px 8px; font-size: 11px;">↗ Перейти</button>
+            </div>
+        </div>
+
+        <div id="crop-container" style="display: none; background: #fff; border-radius: 6px; border: 1px solid #d2d2d7; padding: 5px; width: 100%; box-sizing: border-box; text-align: center;">
+            <canvas id="crop-canvas"></canvas>
+        </div>
+
+        <div id="canvas-wrapper">
+            <div id="manuscript-lens" class="magnifier"></div>
+            <canvas id="manuscript-canvas"></canvas>
+            
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomManual(1.25)" title="Збільшити">+</button>
+                <button class="zoom-btn" onclick="zoomManual(0.8)" title="Зменшити">−</button>
+                <button class="zoom-btn" onclick="resetZoomAndPan()" title="Вписати в екран">⟲ Скинути</button>
+                <button class="zoom-btn" id="btn-toggle-lens" onclick="toggleLensMode()" title="Увімкнути круглу лупу">🔍 Лупа</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Середня панель: Зведений покажчик -->
+    <div class="panel-middle">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+            <h3 style="margin: 0; font-size: 13px;">Зведений покажчик</h3>
+            <span id="global-total-count" style="font-size: 10px; color: #86868b; font-weight: 600;">...</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; gap: 3px;">
+                <select id="global-type-filter" onchange="renderGlobalIndex()" style="font-size: 11px; padding: 3px; flex: 1;">
+                    <option value="all">Усі записи</option>
+                    <option value="person">Антропоніми</option>
+                    <option value="place">Топоніми</option>
+                    <option value="h1">🖋️ Первинний (#h1)</option>
+                    <option value="h2">✍️ Приписки (#h2)</option>
+                    <option value="unlemmatized">⚠️ Нерозмічені</option>
+                    <option value="lemmatized">✅ Розмічені</option>
+                </select>
+                <select id="global-sort-order" onchange="renderGlobalIndex()" style="font-size: 11px; padding: 3px; font-weight: 500;" title="Порядок сортування">
+                    <option value="alpha">🔤 А–Я</option>
+                    <option value="corpus">📜 У рукописі</option>
+                </select>
+            </div>
+            <input type="text" id="global-filter-input" oninput="renderGlobalIndex()" placeholder="Фільтр списку..." style="font-size: 11px; padding: 3px 5px;">
+        </div>
+
+        <div class="index-list-container" id="global-index-list">
+            <div style="text-align: center; color: #86868b; padding-top: 15px; font-size: 11px;">Завантаження...</div>
+        </div>
+    </div>
+
+    <!-- Права панель: Слова на сторінці + Форма анотації -->
+    <div class="panel-right">
+        <div class="workspace">
+            <h3 style="margin-top: 0; font-size: 13px;">Слова на сторінці</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Лінія</th>
+                        <th>Тип</th>
+                        <th>Текст із рукопису</th>
+                    </tr>
+                </thead>
+                <tbody id="lines-table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="workspace" id="editor-form-block" style="display: none;">
+            <h3 id="form-title" style="margin-top: 0; font-size: 13px;">Наукова анотація</h3>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                <div class="form-group">
+                    <label>Тип сутності:</label>
+                    <select id="input-entity-type" onchange="onEntityTypeChange()" style="font-weight: 600;" {% if not is_admin %}disabled{% endif %}>
+                        <option value="person">Особа (person)</option>
+                        <option value="place">Топонім (place)</option>
+                        <option value="status">Титул (status)</option>
+                        <option value="unclear">Неясно (unclear)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Шар письма (TEI @hand):</label>
+                    <select id="input-hand" style="font-weight: 600;" {% if not is_admin %}disabled{% endif %}>
+                        <option value="h1">🖋️ Основний (#h1)</option>
+                        <option value="h2">✍️ Приписка (#h2)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="background: #fafafc; padding: 5px; border-radius: 4px; border: 1px dashed #d2d2d7;">
+                <label style="color: #1d1d1f;">Транскрипція:</label>
+                <input type="text" id="input-raw-text" style="font-weight: 600; color: #0071e3;" {% if not is_admin %}readonly{% endif %}>
+            </div>
+
+            <div class="form-group">
+                <label id="label-lemma">Лема [Enter — зберегти]:</label>
+                <input type="text" id="input-lemma" list="lemmas-datalist" placeholder="Наприклад: Димитар" autocomplete="off" {% if not is_admin %}readonly{% endif %}>
+                <datalist id="lemmas-datalist"></datalist>
+            </div>
+            
+            <div id="person-fields">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <div class="form-group">
+                        <label>Стать (sex):</label>
+                        <select id="input-gender" {% if not is_admin %}disabled{% endif %}>
+                            <option value="">Не вказано</option>
+                            <option value="1">Чоловіча (1)</option>
+                            <option value="2">Жіноча (2)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Роль / Сан (role):</label>
+                        <select id="input-role" {% if not is_admin %}disabled{% endif %}>
+                            <option value="">визначити</option>
+                            <option value="layperson">мирянин (layperson)</option>
+                            <option value="clergy">священнослужитель (clergy)</option>
+                            <option value="monk">монах (monk)</option>
+                            <option value="ruler">правитель (ruler)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="duplicate-control-box" style="display: none; margin-top: 4px; background: #fff8f8; padding: 4px 6px; border-radius: 4px; border: 1px solid #ffcdd2;">
+                <label style="font-size: 11px; cursor: pointer; color: #d32f2f; display: flex; align-items: center; gap: 5px; font-weight: 600;">
+                    <input type="checkbox" id="input-is-duplicate" {% if not is_admin %}disabled{% endif %}> 🚫 Дубль копії (вилучити з частотної статистики)
+                </label>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 5px; margin-top: 8px;">
+                {% if is_admin %}
+                <button onclick="saveCurrentLineData()" style="width: 100%; font-weight: 500;">Зберегти (Ctrl + S)</button>
+                <button onclick="batchSaveCurrentLineData()" class="btn-batch" style="width: 100%; font-weight: 500;" title="Поширити лему і стать на всі такі ж слова">⚡ Розмітити всі такі в кодику</button>
+                {% else %}
+                <div style="background: #f0f0f2; color: #666; font-size: 11px; padding: 6px; border-radius: 4px; text-align: center;">
+                    🔒 <strong>Режим перегляду</strong> (для редагування увійдіть як автор)
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="workspace" id="global-search-results-block" style="display: none; max-height: 180px; overflow-y: auto; background: #fffde7; border-color: #ffd600;">
+            <h3 style="margin-top: 0; display: flex; justify-content: space-between; font-size: 12px;">
+                <span>Знайдено в рукописі</span>
+                <button onclick="document.getElementById('global-search-results-block').style.display='none'" style="background: none; border: none; color: #ff3b30; cursor: pointer; font-size: 12px;">✕ Закрити</button>
+            </h3>
+            <table style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th>Лист</th>
+                        <th>Текст</th>
+                        <th>Лема</th>
+                    </tr>
+                </thead>
+                <tbody id="global-results-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Модальне вікно зворотного зв'язку -->
+<div id="feedback-modal" class="modal-overlay" onclick="if(event.target === this) closeFeedbackModal()">
+    <div class="modal-content" style="max-width: 440px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e7; padding-bottom: 8px; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 15px;">✉️ Зворотний зв'язок з автором</h3>
+            <button onclick="closeFeedbackModal()" style="background: none; border: none; font-size: 18px; color: #86868b; cursor: pointer;">✕</button>
+        </div>
+        <div class="form-group">
+            <label>Ваше ім'я / Інститут:</label>
+            <input type="text" id="fb-name" placeholder="Наприклад: Проф. Іван Ковалевський" style="width: 100%; box-sizing: border-box;">
+        </div>
+        <div class="form-group">
+            <label>Ваш Email (для відповіді):</label>
+            <input type="email" id="fb-email" placeholder="example@univ.edu" style="width: 100%; box-sizing: border-box;">
+        </div>
+        <div class="form-group">
+            <label>Тема повідомлення:</label>
+            <select id="fb-subject" style="width: 100%; box-sizing: border-box;">
+                <option value="Пропозиція леми / виправлення">Пропозиція леми / виправлення читання</option>
+                <option value="Кодикологічне зауваження">Кодикологічне зауваження</option>
+                <option value="Наукове співробітництво">Наукове співробітництво</option>
+                <option value="Інше питання">Інше питання</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Повідомлення:</label>
+            <textarea id="fb-message" rows="4" placeholder="Напишіть ваше зауваження чи коментар..." style="width: 100%; box-sizing: border-box; resize: vertical;"></textarea>
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 12px;">
+            <button onclick="submitFeedback()" style="flex: 1; font-weight: 500;">Надіслати</button>
+            <button onclick="closeFeedbackModal()" class="btn-secondary" style="flex: 1;">Скасувати</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальне вікно входу для автора -->
+<div id="login-modal" class="modal-overlay" onclick="if(event.target === this) closeLoginModal()">
+    <div class="modal-content" style="max-width: 360px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e7; padding-bottom: 8px; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 15px;">🔑 Вхід для автора</h3>
+            <button onclick="closeLoginModal()" style="background: none; border: none; font-size: 18px; color: #86868b; cursor: pointer;">✕</button>
+        </div>
+        <div class="form-group">
+            <label>Пароль адміністратора:</label>
+            <input type="password" id="input-admin-password" placeholder="Введіть пароль..." style="width: 100%; box-sizing: border-box;">
+        </div>
+        <div style="display: flex; gap: 6px; margin-top: 12px;">
+            <button onclick="submitAdminLogin()" style="flex: 1; font-weight: 500;">Увійти</button>
+            <button onclick="closeLoginModal()" class="btn-secondary" style="flex: 1;">Скасувати</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальне вікно статистики з лічильником переглядів -->
+<div id="stat-modal" class="modal-overlay" onclick="if(event.target === this) closeStatisticsModal()">
+    <div class="modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e7; padding-bottom: 10px; margin-bottom: 12px;">
+            <h3 style="margin: 0; font-size: 16px;">Аналітика та частотний словник</h3>
+            <button onclick="closeStatisticsModal()" style="background: none; border: none; font-size: 18px; color: #86868b; cursor: pointer;">✕</button>
+        </div>
+        
+        <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+            <button id="btn-stat-all" class="zoom-btn" onclick="fetchStatistics(false)" style="flex: 1;">📊 Усі згадки</button>
+            <button id="btn-stat-dedup" class="zoom-btn active" onclick="fetchStatistics(true)" style="flex: 1;" title="Виключає паралельні копійні зошити">🔬 Без дублів копій</button>
+        </div>
+
+        <div id="stat-loading" style="text-align: center; color: #86868b;">Обчислення...</div>
+        
+        <div id="stat-body" style="display: none;">
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                <div style="flex: 1; background: #f5f5f7; padding: 10px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 22px; font-weight: 700; color: #0071e3;" id="stat-progress">0%</div>
+                    <div style="font-size: 11px; color: #86868b;">Оброблено імен</div>
+                    <div style="font-size: 10px; color: #1d1d1f; margin-top: 3px;" id="stat-counts">0 / 0</div>
+                </div>
+                <div style="flex: 1; background: #f5f5f7; padding: 10px; border-radius: 8px; text-align: center;">
+                    <div style="font-size: 13px; font-weight: 600; color: #1d1d1f; margin-top: 3px;">Статевий розподіл</div>
+                    <div style="font-size: 12px; margin-top: 4px;">
+                        👨 Чол: <strong id="stat-male">0</strong><br>
+                        👩 Жін: <strong id="stat-female">0</strong>
+                    </div>
+                </div>
+            </div>
+
+            <h4 style="margin: 0 0 6px 0; font-size: 12px; color: #86868b;">ТОП-10 найпоширеніших імен:</h4>
+            <table style="margin-top: 0;">
+                <thead>
+                    <tr>
+                        <th>Лема</th>
+                        <th style="text-align: right;">Згадок</th>
+                    </tr>
+                </thead>
+                <tbody id="stat-top-lemmas"></tbody>
+            </table>
+
+            <div style="margin-top: 14px; border-top: 1px solid #e5e5e7; padding-top: 8px; display: flex; justify-content: space-between; font-size: 11px; color: #86868b;">
+                <span>👥 Загалом переглядів лабораторії:</span>
+                <strong id="stat-views-count" style="color: #1d1d1f;">{{ total_views }}</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальне вікно текстологічного зіставлення «Пліч-о-пліч» -->
+<div id="collation-modal" class="modal-overlay" onclick="if(event.target === this) closeCollationModal()">
+    <div class="collation-modal-content">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e5e7; padding-bottom: 8px; margin-bottom: 10px;">
+            <div>
+                <h3 style="margin: 0; font-size: 15px;" id="collation-modal-title">Текстологічне зіставлення: Оригінал ↔ Копія</h3>
+                <span id="collation-modal-desc" style="font-size: 11px; color: #86868b;"></span>
+            </div>
+            <button onclick="closeCollationModal()" style="background: none; border: none; font-size: 18px; color: #86868b; cursor: pointer;">✕</button>
+        </div>
+
+        <div id="collation-loading" style="text-align: center; color: #86868b; padding: 40px 0;">Завантаження паралельних текстів...</div>
+
+        <div id="collation-body" style="display: none; flex: 1; overflow-y: auto;">
+            <table style="width: 100%;">
+                <thead>
+                    <tr style="background: #f5f5f7;">
+                        <th style="width: 44%; color: #0071e3;" id="th-orig-col">🔵 Автентичний оригінал XVI ст.</th>
+                        <th style="width: 4%; text-align: center;">↔</th>
+                        <th style="width: 52%; color: #34c759;" id="th-copy-col">📋 Копія писця ĩ (XVII ст.)</th>
+                    </tr>
+                </thead>
+                <tbody id="collation-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div id="toast-msg"></div>
+
+<script>
+    const currentImageFolder = document.body.dataset.imageFolder || 'slepche_116';
+    const isAdmin = document.body.dataset.isAdmin === '1';
+
+    let currentLines = [];
+    let selectedLineIndex = null;
+    let baseImage = new Image();
+    let lemmaDictionary = {};
+    let allEntitiesData = [];
+    let codexStructure = { sections: [], categories: {}, parallel_concordance: [] };
+
+    let zoomScale = 1;
+    let panOffset = { x: 0, y: 0 };
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+
+    let isLensMode = false;
+    const lensZoom = 2.8;
+
+    function openFeedbackModal() {
+        const modal = document.getElementById('feedback-modal');
+        if (modal) modal.style.display = 'flex';
+        const msg = document.getElementById('fb-message');
+        if (msg) {
+            msg.value = '';
+            setTimeout(() => msg.focus(), 50);
+        }
+    }
+
+    function closeFeedbackModal() {
+        const modal = document.getElementById('feedback-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function submitFeedback() {
+        const name = document.getElementById('fb-name')?.value || '';
+        const email = document.getElementById('fb-email')?.value || '';
+        const subject = document.getElementById('fb-subject')?.value || '';
+        const message = document.getElementById('fb-message')?.value || '';
+
+        const selector = document.getElementById('page-selector');
+        const pageLabel = selector?.options[selector.selectedIndex]?.text || '';
+        const msTitle = document.getElementById('header-ms-title')?.textContent || '';
+        const contextInfo = `${msTitle} • Аркуш ${pageLabel}`;
+
+        if (!message.trim()) {
+            showToast('Будь ласка, введіть текст повідомлення', true);
+            return;
+        }
+
+        fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email, subject, message, context: contextInfo })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                closeFeedbackModal();
+                showToast(data.message);
+            } else {
+                showToast(data.message || 'Помилка надсилання', true);
+            }
+        })
+        .catch(() => showToast('Мережева помилка надсилання', true));
+    }
+
+    function openLoginModal() {
+        const modal = document.getElementById('login-modal');
+        if (modal) modal.style.display = 'flex';
+        const inp = document.getElementById('input-admin-password');
+        if (inp) {
+            inp.value = '';
+            setTimeout(() => inp.focus(), 50);
+        }
+    }
+
+    function closeLoginModal() {
+        const modal = document.getElementById('login-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function submitAdminLogin() {
+        const pwd = document.getElementById('input-admin-password')?.value || '';
+        fetch('/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pwd })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                window.location.reload();
+            } else {
+                showToast(data.message || 'Невірний пароль!', true);
+            }
+        })
+        .catch(() => showToast('Помилка сервера авторизації', true));
+    }
+
+    function logoutAdmin() {
+        fetch('/api/logout', { method: 'POST' })
+            .then(() => window.location.reload());
+    }
+
+    document.getElementById('input-admin-password')?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            submitAdminLogin();
+        }
+    });
+
+    function switchCodex(codexId) {
+        fetch(`/api/select-codex/${codexId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.reload();
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(() => window.location.reload());
+    }
+
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast-msg');
+        if (!toast) return;
+        toast.style.background = isError ? '#ff3b30' : '#34c759';
+        toast.textContent = message;
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0)';
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(10px)';
+        }, 2000);
+    }
+
+    function toggleLensMode() {
+        isLensMode = !isLensMode;
+        const btn = document.getElementById('btn-toggle-lens');
+        const wrapper = document.getElementById('canvas-wrapper');
+        const lens = document.getElementById('manuscript-lens');
+
+        if (isLensMode) {
+            btn?.classList.add('active');
+            wrapper?.classList.add('lens-mode');
+            if (lens) lens.style.backgroundImage = `url('${baseImage.src}')`;
+        } else {
+            btn?.classList.remove('active');
+            wrapper?.classList.remove('lens-mode');
+            if (lens) lens.style.display = 'none';
+        }
+    }
+
+    function loadCodexStructure() {
+        fetch('/api/codex-structure')
+            .then(res => res.json())
+            .then(data => {
+                codexStructure = data || { sections: [], categories: {}, parallel_concordance: [] };
+                renderCodexTimeline();
+
+                const dupBox = document.getElementById('duplicate-control-box');
+                const hasDuplicates = codexStructure.metadata?.has_duplicate_copies !== false && 
+                                     (codexStructure.parallel_concordance?.length > 0 || currentImageFolder.includes('116'));
+                if (dupBox) {
+                    dupBox.style.display = hasDuplicates ? 'block' : 'none';
+                }
+            })
+            .catch(() => {});
+    }
+
+    function renderCodexTimeline() {
+        const bar = document.getElementById('codex-timeline-bar');
+        if (!bar) return;
+        bar.querySelectorAll('.codex-segment').forEach(s => s.remove());
+        const total = codexStructure?.metadata?.total_folios || 100;
+
+        (codexStructure?.sections || []).forEach(sec => {
+            const count = (sec.folio_end_num - sec.folio_start_num + 1) || 1;
+            const widthPct = (count / total) * 100;
+            const cat = (codexStructure?.categories || {})[sec.category] || {};
+
+            const seg = document.createElement('div');
+            seg.className = 'codex-segment';
+            seg.style.width = `${widthPct}%`;
+            seg.style.backgroundColor = cat.color || '#999';
+            seg.title = `${sec.title} (арк. ${sec.folio_start_num}–${sec.folio_end_num})\n${sec.scribe || ''}`;
+
+            seg.onmouseenter = () => {
+                const hInfo = document.getElementById('codex-hover-info');
+                if (hInfo) hInfo.textContent = `арк. ${sec.folio_start_num}–${sec.folio_end_num} • ${sec.title}`;
+            };
+            seg.onmouseleave = () => {
+                updateHoverInfoToActive();
+            };
+            seg.onclick = () => {
+                jumpToFolioNum(sec.folio_start_num);
+            };
+
+            bar.appendChild(seg);
+        });
+    }
+
+    function updateCodexIndicator(folioNum) {
+        const total = codexStructure?.metadata?.total_folios || 100;
+        const ind = document.getElementById('codex-map-indicator');
+        if (!ind) return;
+        const pct = Math.min(Math.max((folioNum / total) * 100, 0), 99);
+        ind.style.left = `${pct}%`;
+        updateHoverInfoToActive();
+    }
+
+    function updateHoverInfoToActive() {
+        const selector = document.getElementById('page-selector');
+        if (!selector || selector.options.length === 0) return;
+        const opt = selector.options[selector.selectedIndex] || selector.options[0];
+        if (!opt) return;
+
+        const fNum = parseInt(opt.getAttribute('data-folionum') || '1');
+        let foundSec = null;
+        for (let s of (codexStructure?.sections || [])) {
+            if (fNum >= s.folio_start_num && fNum <= s.folio_end_num) {
+                foundSec = s;
+                break;
+            }
+        }
+        const hInfo = document.getElementById('codex-hover-info');
+        if (hInfo) {
+            hInfo.textContent = foundSec ? `Зараз: арк. ${opt.text} • ${foundSec.title}` : `Зараз: арк. ${opt.text}`;
+        }
+    }
+
+    function jumpToFolioNum(targetNum) {
+        const selector = document.getElementById('page-selector');
+        if (!selector) return;
+        let bestIndex = -1;
+
+        for (let i = 0; i < selector.options.length; i++) {
+            const optText = selector.options[i].text;
+            const nums = (optText.match(/\d+/g) || []).map(Number);
+            if (nums.includes(targetNum)) {
+                bestIndex = i;
+                break;
+            }
+            if (nums.length > 0 && nums[0] >= targetNum && bestIndex === -1) {
+                bestIndex = i;
+                break;
+            }
+        }
+
+        if (bestIndex !== -1) {
+            selector.selectedIndex = bestIndex;
+            loadPageData();
+        }
+    }
+
+    function checkParallelConcordance(folioLabel) {
+        const banner = document.getElementById('parallel-banner');
+        const desc = document.getElementById('parallel-desc');
+        const jumpBtn = document.getElementById('parallel-jump-btn');
+        const collateBtn = document.getElementById('parallel-collate-btn');
+        if (!banner || !desc) return;
+
+        if (!codexStructure?.parallel_concordance || codexStructure.parallel_concordance.length === 0) {
+            banner.style.display = 'none';
+            return;
+        }
+
+        const matchCopy = codexStructure.parallel_concordance.find(p => folioLabel && folioLabel.includes(p.copy_folio));
+        if (matchCopy) {
+            banner.style.display = 'flex';
+            desc.innerHTML = `<strong>📋 Копійний аркуш:</strong> дублює оригінал на арк. <strong>${matchCopy.orig_folio}</strong>`;
+            if (jumpBtn) {
+                jumpBtn.textContent = `↗ На арк. ${matchCopy.orig_folio}`;
+                jumpBtn.onclick = () => jumpToExactFolioLabel(matchCopy.orig_folio);
+            }
+            if (collateBtn) {
+                collateBtn.onclick = () => openCollationModal(matchCopy.orig_folio, matchCopy.copy_folio, matchCopy.description);
+            }
+            return;
+        }
+
+        const matchOrig = codexStructure.parallel_concordance.find(p => folioLabel && folioLabel.includes(p.orig_folio));
+        if (matchOrig) {
+            banner.style.display = 'flex';
+            desc.innerHTML = `<strong>🔵 Автентичний оригінал:</strong> має пізнішу копію на арк. <strong>${matchOrig.copy_folio}</strong>`;
+            if (jumpBtn) {
+                jumpBtn.textContent = `↗ На копію ${matchOrig.copy_folio}`;
+                jumpBtn.onclick = () => jumpToExactFolioLabel(matchOrig.copy_folio);
+            }
+            if (collateBtn) {
+                collateBtn.onclick = () => openCollationModal(matchOrig.orig_folio, matchOrig.copy_folio, matchOrig.description);
+            }
+            return;
+        }
+
+        banner.style.display = 'none';
+    }
+
+    let currentCollationParams = { orig: '', copy: '', desc: '', onlyPerson: 1 };
+
+    function openCollationModal(origFolio, copyFolio, description, onlyPerson = 1) {
+        currentCollationParams = { orig: origFolio, copy: copyFolio, desc: description, onlyPerson: onlyPerson };
+        
+        const modal = document.getElementById('collation-modal');
+        const loading = document.getElementById('collation-loading');
+        const body = document.getElementById('collation-body');
+        const tbody = document.getElementById('collation-table-body');
+        if (!modal) return;
+
+        document.getElementById('collation-modal-title').textContent = `Текстологічне зіставлення: Арк. ${origFolio} (Оригінал) ↔ Арк. ${copyFolio} (Копія)`;
+        document.getElementById('collation-modal-desc').innerHTML = `
+            ${description || ''} • 
+            <label style="font-size: 11px; cursor: pointer; color: #0071e3; margin-left: 8px;">
+                <input type="checkbox" id="chk-only-person" ${onlyPerson ? 'checked' : ''} onchange="openCollationModal('${origFolio}', '${copyFolio}', '${description}', this.checked ? 1 : 0)">
+                Тільки антропоніми (відсікати топоніми)
+            </label>
+        `;
+
+        document.getElementById('th-orig-col').textContent = `🔵 Оригінал XVI ст. (арк. ${origFolio})`;
+        document.getElementById('th-copy-col').textContent = `📋 Копія писця ĩ XVII ст. (арк. ${copyFolio})`;
+
+        modal.style.display = 'flex';
+        loading.style.display = 'block';
+        body.style.display = 'none';
+        tbody.innerHTML = '';
+
+        fetch(`/api/collation?orig=${origFolio}&copy=${copyFolio}&only_person=${onlyPerson}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.aligned_rows || data.aligned_rows.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #86868b; padding: 20px;">Немає записів для зіставлення</td></tr>';
+                } else {
+                    data.aligned_rows.forEach(row => {
+                        const oLine = row.orig;
+                        const cLine = row.copy;
+
+                        let oText = oLine ? `<strong>${oLine.text}</strong>` : '<em style="color:#86868b;">— (пропущено в оригіналі)</em>';
+                        let cText = cLine ? `<strong>${cLine.text}</strong>` : '<em style="color:#d32f2f; font-weight: 500;">— (пропущено в копії)</em>';
+
+                        let statusSymbol = '=';
+                        let rowBg = '#ffffff';
+
+                        if (row.status === 'omitted_in_copy') {
+                            statusSymbol = '🚫';
+                            rowBg = '#ffebee';
+                        } else if (row.status === 'added_in_copy') {
+                            statusSymbol = '➕';
+                            rowBg = '#e8f5e9';
+                        } else if (row.status === 'diff') {
+                            statusSymbol = '≠';
+                            rowBg = '#fffde7';
+                        }
+
+                        let dupBtn = '';
+                        if (cLine && isAdmin) {
+                            const isDup = cLine.is_duplicate;
+                            dupBtn = `
+                                <button onclick="toggleDuplicateFromCollation('${row.copy_page_id}', '${cLine.line_id}', ${!isDup})" 
+                                        style="margin-left:6px; padding:1px 6px; font-size:10px; border-radius:3px; cursor:pointer; border:1px solid ${isDup ? '#ef9a9a' : '#d2d2d7'}; background:${isDup ? '#ffebee' : '#f5f5f7'}; color:${isDup ? '#c62828' : '#666'};"
+                                        title="${isDup ? 'Вилучено зі статистики. Натисніть, щоб врахувати' : 'Враховано. Натисніть, щоб позначити як дубль'}">
+                                    ${isDup ? '🚫 Дубль' : '✅ Враховано'}
+                                </button>
+                            `;
+                        }
+
+                        const oLineNum = oLine ? `[${oLine.line_number}]` : '—';
+                        const cLineNum = cLine ? `[${cLine.line_number}]` : '—';
+
+                        const tr = document.createElement('tr');
+                        tr.style.backgroundColor = rowBg;
+                        tr.innerHTML = `
+                            <td><span style="color:#86868b; font-size:11px;">${oLineNum}</span> ${oText}</td>
+                            <td style="text-align: center; font-size: 13px;">${statusSymbol}</td>
+                            <td>
+                                <div style="display:flex; justify-content:space-between; align-items:center;">
+                                    <span><span style="color:#86868b; font-size:11px;">${cLineNum}</span> ${cText}</span>
+                                    ${dupBtn}
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+                loading.style.display = 'none';
+                body.style.display = 'block';
+            })
+            .catch(() => {
+                loading.textContent = 'Помилка завантаження зіставлення.';
+            });
+    }
+
+    function toggleDuplicateFromCollation(pageId, lineId, makeDuplicate) {
+        if (!isAdmin) return;
+        fetch('/api/set-duplicate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page_id: pageId, line_id: lineId, is_duplicate: makeDuplicate })
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.status === 'success') {
+                showToast(makeDuplicate ? 'Позначено як дубль (вилучено зі статистики)' : 'Позначено як унікальне (враховано)');
+                const it = allEntitiesData.find(x => x.line_id === lineId);
+                if (it) it.is_duplicate = makeDuplicate;
+                
+                const cur = currentLines.find(x => x.line_id === lineId);
+                if (cur) cur.is_duplicate = makeDuplicate;
+
+                openCollationModal(currentCollationParams.orig, currentCollationParams.copy, currentCollationParams.desc, currentCollationParams.onlyPerson);
+                renderTable();
+                renderGlobalIndex();
+            }
+        });
+    }
+
+    function closeCollationModal() {
+        const modal = document.getElementById('collation-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function jumpToExactFolioLabel(label) {
+        const selector = document.getElementById('page-selector');
+        if (!selector) return;
+        for (let i = 0; i < selector.options.length; i++) {
+            if (selector.options[i].text.includes(label)) {
+                selector.selectedIndex = i;
+                loadPageData();
+                break;
+            }
+        }
+    }
+
+    function normalizeForSlavicSort(str) {
+        if (!str || typeof str !== 'string') return '';
+        let s = str.toLowerCase().trim();
+        s = s.replace(/[\u0300-\u036F\u0483-\u0489\u2e2f':~.~+,\-–—()\[\]]/g, '');
+        const map = {
+            'ѡ': 'о', 'ѿ': 'от', 'ѣ': 'е', 'є': 'е',
+            'і': 'и', 'ї': 'и', 'ѵ': 'и', 'ѷ': 'и', 'ы': 'и', 'й': 'и',
+            'ꙗ': 'я', 'ѧ': 'я', 'ѩ': 'я', 'ѫ': 'у', 'ꙋ': 'у',
+            'ѳ': 'ф', 'ѕ': 'з', 'ѯ': 'кс', 'ѱ': 'пс',
+            'ъ': '', 'ь': '', 'ј': 'й'
+        };
+        for (let k in map) {
+            s = s.split(k).join(map[k]);
+        }
+        return s;
+    }
+
+    function loadAllEntitiesIndex() {
+        fetch('/api/all-entities')
+            .then(res => res.json())
+            .then(data => {
+                allEntitiesData = (data || []).map(item => {
+                    item._sortKey = normalizeForSlavicSort(item.text || '');
+                    item._normLemma = normalizeForSlavicSort(item.lemma || '');
+                    return item;
+                });
+                renderGlobalIndex();
+            })
+            .catch(() => {
+                const countEl = document.getElementById('global-total-count');
+                if (countEl) countEl.textContent = '0 слів';
+                const container = document.getElementById('global-index-list');
+                if (container) container.innerHTML = '<div style="text-align: center; color: #86868b; padding-top: 15px; font-size: 11px;">Помилка завантаження</div>';
+            });
+    }
+
+    function renderGlobalIndex() {
+        try {
+            const container = document.getElementById('global-index-list');
+            if (!container) return;
+            const typeFilter = document.getElementById('global-type-filter')?.value || 'all';
+            const sortOrder = document.getElementById('global-sort-order')?.value || 'alpha';
+            const textFilter = (document.getElementById('global-filter-input')?.value || '').trim().toLowerCase();
+            const normFilter = textFilter ? normalizeForSlavicSort(textFilter) : '';
+            
+            let filtered = (allEntitiesData || []).filter(item => {
+                if (!item) return false;
+                if (typeFilter === 'person' && item.entity_type !== 'person') return false;
+                if (typeFilter === 'place' && item.entity_type !== 'place') return false;
+                
+                const rawH = String(item.hand || 'h1').toLowerCase();
+                if (typeFilter === 'h1' && !rawH.includes('h1') && !rawH.includes('первинний')) return false;
+                if (typeFilter === 'h2' && (rawH.includes('h1') || rawH.includes('первинний'))) return false;
+                
+                if (typeFilter === 'unlemmatized' && item.lemma) return false;
+                if (typeFilter === 'lemmatized' && !item.lemma) return false;
+
+                if (textFilter) {
+                    const textMatch = String(item.text || '').toLowerCase().includes(textFilter) || (item._sortKey && item._sortKey.includes(normFilter));
+                    const lemmaMatch = String(item.lemma || '').toLowerCase().includes(textFilter) || (item._normLemma && item._normLemma.includes(normFilter));
+                    const folioMatch = String(item.page_label || '').toLowerCase().includes(textFilter);
+                    return textMatch || lemmaMatch || folioMatch;
+                }
+                return true;
+            });
+
+            if (sortOrder === 'alpha') {
+                filtered.sort((a, b) => (a._sortKey || '').localeCompare(b._sortKey || '', 'uk'));
+            }
+
+            const countEl = document.getElementById('global-total-count');
+            if (countEl) countEl.textContent = `${filtered.length} слів`;
+            container.innerHTML = '';
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #86868b; padding-top: 15px; font-size: 11px;">Нічого не знайдено</div>';
+                return;
+            }
+
+            const sliceLimit = Math.min(filtered.length, 300);
+            const fragment = document.createDocumentFragment();
+            
+            for (let i = 0; i < sliceLimit; i++) {
+                const item = filtered[i];
+                const div = document.createElement('div');
+                div.className = 'index-item';
+                div.onclick = () => jumpToGlobalResult(item.page_id, item.line_id);
+
+                const isDone = item.lemma && String(item.lemma).trim() !== '';
+                const dotClass = isDone ? 'dot-done' : 'dot-empty';
+                const statusPrefix = item.status_title ? `<span style="color:#e65100; font-size:10px; margin-right:2px;">${item.status_title}</span>` : '';
+                const lemmaInfo = item.lemma ? `<span style="color: #0071e3; font-weight: 500; font-size: 11px;">→ ${item.lemma}</span>` : '<span style="color: #86868b; font-size: 10px;">—</span>';
+
+                const isSecHand = String(item.hand || '').includes('h2') || String(item.hand || '').includes('вторинний');
+                const handIcon = isSecHand ? '✍️' : '';
+                const dupBadge = item.is_duplicate ? '<span style="font-size:9px; color:#d32f2f; background:#ffebee; padding:1px 3px; border-radius:2px; margin-right:2px;">ДУБЛЬ</span>' : '';
+
+                div.innerHTML = `
+                    <div style="display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 145px;">
+                        <span class="status-dot ${dotClass}" title="${isDone ? 'Розмічено' : 'Ще не розмічено'}"></span>
+                        <span style="color: #86868b; font-size: 10px; margin-right: 4px; min-width: 25px;">[${item.page_label || ''}]</span>
+                        <span style="font-weight: 600;">${dupBadge}${handIcon}${statusPrefix}${item.text || ''}</span>
+                    </div>
+                    <div>${lemmaInfo}</div>
+                `;
+                fragment.appendChild(div);
+            }
+
+            container.appendChild(fragment);
+        } catch (e) {
+            console.error("Помилка рендерингу покажчика:", e);
+        }
+    }
+
+    function openStatisticsModal() {
+        const modal = document.getElementById('stat-modal');
+        if (modal) modal.style.display = 'flex';
+        fetchStatistics(true);
+    }
+
+    function fetchStatistics(dedup) {
+        const loading = document.getElementById('stat-loading');
+        const body = document.getElementById('stat-body');
+        const btnAll = document.getElementById('btn-stat-all');
+        const btnDedup = document.getElementById('btn-stat-dedup');
+        if (!loading || !body) return;
+
+        if (dedup) {
+            btnDedup?.classList.add('active');
+            btnAll?.classList.remove('active');
+        } else {
+            btnAll?.classList.add('active');
+            btnDedup?.classList.remove('active');
+        }
+
+        loading.style.display = 'block';
+        body.style.display = 'none';
+
+        fetch(`/api/statistics?dedup=${dedup ? 1 : 0}`)
+            .then(res => res.json())
+            .then(stats => {
+                document.getElementById('stat-progress').textContent = `${stats.progress_percent || 0}%`;
+                document.getElementById('stat-counts').textContent = `${stats.lemmatized_count || 0} з ${stats.total_items || 0} імен`;
+                document.getElementById('stat-male').textContent = stats.male_count || 0;
+                document.getElementById('stat-female').textContent = stats.female_count || 0;
+
+                const topBody = document.getElementById('stat-top-lemmas');
+                if (topBody) {
+                    topBody.innerHTML = '';
+                    if (!stats.top_lemmas || stats.top_lemmas.length === 0) {
+                        topBody.innerHTML = '<tr><td colspan="2" style="color: #86868b; text-align: center;">Ще немає розмічених імен</td></tr>';
+                    } else {
+                        stats.top_lemmas.forEach(([lemma, count]) => {
+                            const tr = document.createElement('tr');
+                            tr.title = `Знайти всі згадки "${lemma}" у рукописі`;
+                            tr.onclick = () => {
+                                closeStatisticsModal();
+                                const sInp = document.getElementById('global-search-input');
+                                if (sInp) sInp.value = lemma;
+                                executeGlobalSearch();
+                            };
+                            tr.innerHTML = `<td><strong>${lemma}</strong> <span style="font-size: 10px; color: #86868b;">🔍</span></td><td style="text-align: right; color: #0071e3; font-weight: 600;">${count}</td>`;
+                            topBody.appendChild(tr);
+                        });
+                    }
+                }
+
+                loading.style.display = 'none';
+                body.style.display = 'block';
+            });
+    }
+
+    function closeStatisticsModal() {
+        const modal = document.getElementById('stat-modal');
+        if (modal) modal.style.display = 'none';
+    }
+
+    function loadLemmasDictionary() {
+        fetch('/api/lemmas')
+            .then(res => res.json())
+            .then(data => {
+                const datalist = document.getElementById('lemmas-datalist');
+                if (!datalist) return;
+                datalist.innerHTML = '';
+                lemmaDictionary = {};
+                const seenLemmas = new Set();
+
+                (data || []).forEach(item => {
+                    const cleanLemma = String(item.lemma || '').trim();
+                    const lowerKey = cleanLemma.toLowerCase();
+                    if (cleanLemma && !seenLemmas.has(lowerKey)) {
+                        seenLemmas.add(lowerKey);
+                        lemmaDictionary[lowerKey] = item.gender;
+                        const option = document.createElement('option');
+                        option.value = cleanLemma;
+                        datalist.appendChild(option);
+                    }
+                });
+            })
+            .catch(() => {});
+    }
+
+    document.getElementById('input-lemma')?.addEventListener('input', function() {
+        const val = this.value.trim().toLowerCase();
+        const genderSelect = document.getElementById('input-gender');
+        if (genderSelect && lemmaDictionary[val]) {
+            genderSelect.value = lemmaDictionary[val];
+        }
+    });
+
+    function loadPageData() {
+        const selector = document.getElementById('page-selector');
+        if (!selector || selector.options.length === 0) return;
+        
+        const pageId = selector.value;
+        const selectedOption = selector.options[selector.selectedIndex] || selector.options[0];
+        if (!selectedOption) return;
+
+        const imgUrl = selectedOption.getAttribute('data-img');
+        const fNum = parseInt(selectedOption.getAttribute('data-folionum') || '1');
+
+        const editorBlock = document.getElementById('editor-form-block');
+        if (editorBlock) editorBlock.style.display = 'none';
+        const cropCont = document.getElementById('crop-container');
+        if (cropCont) cropCont.style.display = 'none';
+        selectedLineIndex = null;
+
+        updateCodexIndicator(fNum);
+        checkParallelConcordance(selectedOption.text || '');
+
+        baseImage = new Image();
+        baseImage.src = `/static/images/${currentImageFolder}/${imgUrl}`;
+        baseImage.onload = () => {
+            fetch(`/api/page/${pageId}`)
+                .then(res => res.json())
+                .then(data => {
+                    currentLines = data || [];
+                    renderTable();
+                    resetZoomAndPan();
+                })
+                .catch(() => {
+                    currentLines = [];
+                    renderTable();
+                    resetZoomAndPan();
+                });
+        };
+        baseImage.onerror = () => {
+            currentLines = [];
+            renderTable();
+            drawCanvas(null);
+        };
+    }
+
+    function resetZoomAndPan() {
+        if (!baseImage.width) return;
+        const wrapper = document.getElementById('canvas-wrapper');
+        const fullCanvas = document.getElementById('manuscript-canvas');
+        if (!wrapper || !fullCanvas) return;
+
+        fullCanvas.width = wrapper.clientWidth;
+        fullCanvas.height = wrapper.clientHeight;
+
+        const scaleX = fullCanvas.width / baseImage.width;
+        const scaleY = fullCanvas.height / baseImage.height;
+        zoomScale = Math.min(scaleX, scaleY) * 0.98;
+
+        panOffset.x = (fullCanvas.width - baseImage.width * zoomScale) / 2;
+        panOffset.y = (fullCanvas.height - baseImage.height * zoomScale) / 2;
+
+        drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null);
+    }
+
+    function zoomManual(factor) {
+        const wrapper = document.getElementById('canvas-wrapper');
+        if (!wrapper) return;
+        const centerX = wrapper.clientWidth / 2;
+        const centerY = wrapper.clientHeight / 2;
+        applyZoom(factor, centerX, centerY);
+    }
+
+    function applyZoom(factor, cursorX, cursorY) {
+        const newZoom = Math.min(Math.max(zoomScale * factor, 0.08), 8.0);
+        panOffset.x = cursorX - (cursorX - panOffset.x) * (newZoom / zoomScale);
+        panOffset.y = cursorY - (cursorY - panOffset.y) * (newZoom / zoomScale);
+        zoomScale = newZoom;
+
+        drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null);
+    }
+
+    function getBadgeClass(type) {
+        if (type === 'person') return 'tag-person';
+        if (type === 'place') return 'tag-place';
+        if (type === 'status') return 'tag-status';
+        return 'tag-unclear';
+    }
+
+    function renderTable() {
+        const tbody = document.getElementById('lines-table-body');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (!currentLines || currentLines.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #86868b; padding: 35px 10px; font-size: 12px; line-height: 1.6;">
+                        📖 <strong>Літургійний текст / Заголовок розділу</strong><br>
+                        <span style="font-size: 11px; color: #a1a1a6;">На цьому розвороті немає списків імен.<br>Зображення доступне для перегляду та зуму зліва.</span>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        currentLines.forEach((line, index) => {
+            const tr = document.createElement('tr');
+            tr.id = `row-${index}`;
+            tr.onclick = () => selectLine(index);
+            
+            const statusBadge = line.status_title ? `<span class="tag-badge tag-status" style="margin-right: 3px;">${line.status_title}</span>` : '';
+            const folioBadge = line.folio ? `<span style="color: #86868b; font-size: 10px; margin-right: 3px;">[${line.folio}]</span>` : '';
+            
+            const isSec = (line.hand || '').includes('h2') || (line.hand || '').includes('secondary');
+            const handIcon = isSec ? '<span class="hand-badge" title="Вторинний шар / приписка">✍️</span>' : '';
+            const dupBadge = line.is_duplicate ? '<span style="font-size:9px; color:#d32f2f; background:#ffebee; padding:1px 3px; border-radius:2px; margin-right:3px;">ДУБЛЬ</span>' : '';
+
+            tr.innerHTML = `
+                <td>${folioBadge}${line.line_number}</td>
+                <td><span id="badge-display-${index}" class="tag-badge ${getBadgeClass(line.entity_type)}">${line.entity_type}</span></td>
+                <td>${dupBadge}${handIcon}${statusBadge}<strong id="text-display-${index}">${line.text}</strong></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function onEntityTypeChange() {
+        const type = document.getElementById('input-entity-type')?.value || 'person';
+        const personFields = document.getElementById('person-fields');
+        const formTitle = document.getElementById('form-title');
+        const labelLemma = document.getElementById('label-lemma');
+
+        if (type === 'place') {
+            if (personFields) personFields.style.display = 'none';
+            if (formTitle) formTitle.textContent = 'Анотація топоніма (place)';
+            if (labelLemma) labelLemma.textContent = 'Назва поселення:';
+        } else if (type === 'status') {
+            if (personFields) personFields.style.display = 'none';
+            if (formTitle) formTitle.textContent = 'Анотація статусу (status)';
+            if (labelLemma) labelLemma.textContent = 'Канонічний сан:';
+        } else {
+            if (personFields) personFields.style.display = 'block';
+            if (formTitle) formTitle.textContent = 'Анотація імені (person)';
+            if (labelLemma) labelLemma.textContent = 'Лема імені [Enter — зберегти]:';
+        }
+    }
+
+    function selectLine(index) {
+        if (selectedLineIndex !== null) {
+            const prevRow = document.getElementById(`row-${selectedLineIndex}`);
+            if (prevRow) prevRow.classList.remove('selected');
+        }
+        selectedLineIndex = index;
+        const line = currentLines[index];
+        if (!line) return;
+
+        const currentRow = document.getElementById(`row-${index}`);
+        if (currentRow) currentRow.classList.add('selected');
+
+        const entitySelect = document.getElementById('input-entity-type');
+        if (entitySelect) {
+            if (['person', 'place', 'status', 'unclear'].includes(line.entity_type)) {
+                entitySelect.value = line.entity_type;
+            } else {
+                entitySelect.value = 'person';
+            }
+        }
+
+        const handSelect = document.getElementById('input-hand');
+        if (handSelect) {
+            const hVal = (line.hand || 'h1').toLowerCase();
+            handSelect.value = (hVal.includes('h2') || hVal.includes('secondary')) ? 'h2' : 'h1';
+        }
+
+        const dupChk = document.getElementById('input-is-duplicate');
+        if (dupChk) dupChk.checked = !!line.is_duplicate;
+
+        const rawTxt = document.getElementById('input-raw-text');
+        if (rawTxt) rawTxt.value = line.text || '';
+
+        const lemInp = document.getElementById('input-lemma');
+        if (lemInp) lemInp.value = line.lemma || '';
+
+        const genSel = document.getElementById('input-gender');
+        if (genSel) genSel.value = line.gender || '';
+
+        const rolSel = document.getElementById('input-role');
+        if (rolSel) rolSel.value = line.role || '';
+
+        onEntityTypeChange();
+        const editorBlock = document.getElementById('editor-form-block');
+        if (editorBlock) editorBlock.style.display = 'block';
+
+        if (isAdmin && lemInp) setTimeout(() => lemInp.focus(), 50);
+
+        smartFocusOnCoordinates(line.coordinates);
+        drawCanvas(line.coordinates);
+    }
+
+    function smartFocusOnCoordinates(coords) {
+        if (!coords || !coords.width) return;
+        const wrapper = document.getElementById('canvas-wrapper');
+        if (!wrapper) return;
+        const lineCenterX = coords.x + coords.width / 2;
+        const lineCenterY = coords.y + coords.height / 2;
+        panOffset.x = (wrapper.clientWidth / 2) - (lineCenterX * zoomScale);
+        panOffset.y = (wrapper.clientHeight / 2) - (lineCenterY * zoomScale);
+    }
+
+    function drawCanvas(coords) {
+        const fullCanvas = document.getElementById('manuscript-canvas');
+        const wrapper = document.getElementById('canvas-wrapper');
+        if (!fullCanvas || !wrapper) return;
+        const fullCtx = fullCanvas.getContext('2d');
+        const cropCanvas = document.getElementById('crop-canvas');
+        const cropCtx = cropCanvas ? cropCanvas.getContext('2d') : null;
+        const cropContainer = document.getElementById('crop-container');
+
+        if (!baseImage.width) return;
+
+        if (fullCanvas.width !== wrapper.clientWidth || fullCanvas.height !== wrapper.clientHeight) {
+            fullCanvas.width = wrapper.clientWidth;
+            fullCanvas.height = wrapper.clientHeight;
+        }
+
+        fullCtx.clearRect(0, 0, fullCanvas.width, fullCanvas.height);
+
+        fullCtx.save();
+        fullCtx.translate(panOffset.x, panOffset.y);
+        fullCtx.scale(zoomScale, zoomScale);
+
+        fullCtx.drawImage(baseImage, 0, 0, baseImage.width, baseImage.height);
+
+        if (coords && coords.width > 0) {
+            fullCtx.strokeStyle = '#ff3b30';
+            fullCtx.lineWidth = 3 / zoomScale;
+            fullCtx.shadowBlur = 8 / zoomScale;
+            fullCtx.shadowColor = '#ff3b30';
+            fullCtx.strokeRect(coords.x, coords.y, coords.width, coords.height);
+            fullCtx.shadowBlur = 0;
+        }
+
+        fullCtx.restore();
+
+        if (coords && coords.width > 0 && cropCanvas && cropCtx && cropContainer) {
+            cropContainer.style.display = 'block';
+            const padX = 60;
+            const padY = 30;
+            const srcX = Math.max(0, coords.x - padX);
+            const srcY = Math.max(0, coords.y - padY);
+            const srcW = Math.min(baseImage.width - srcX, coords.width + (padX * 2));
+            const srcH = Math.min(baseImage.height - srcY, coords.height + (padY * 2));
+
+            cropCanvas.width = srcW;
+            cropCanvas.height = srcH;
+            cropCtx.drawImage(baseImage, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH);
+        } else if (cropContainer) {
+            cropContainer.style.display = 'none';
+        }
+    }
+
+    const canvasWrapper = document.getElementById('canvas-wrapper');
+    const lens = document.getElementById('manuscript-lens');
+
+    canvasWrapper?.addEventListener('wheel', function(e) {
+        e.preventDefault();
+        const rect = canvasWrapper.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
+        applyZoom(zoomFactor, mouseX, mouseY);
+    }, { passive: false });
+
+    canvasWrapper?.addEventListener('mousedown', function(e) {
+        if (e.button === 0 && !isLensMode) {
+            isPanning = true;
+            canvasWrapper.classList.add('grabbing');
+            panStart.x = e.clientX - panOffset.x;
+            panStart.y = e.clientY - panOffset.y;
+        }
+    });
+
+    window.addEventListener('mousemove', function(e) {
+        if (!canvasWrapper) return;
+        const rect = canvasWrapper.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        if (isPanning) {
+            panOffset.x = e.clientX - panStart.x;
+            panOffset.y = e.clientY - panStart.y;
+            drawCanvas(selectedLineIndex !== null && currentLines[selectedLineIndex] ? currentLines[selectedLineIndex].coordinates : null);
+        }
+
+        if (isLensMode && lens && mouseX >= 0 && mouseX <= rect.width && mouseY >= 0 && mouseY <= rect.height) {
+            lens.style.display = 'block';
+            lens.style.left = (mouseX - lens.offsetWidth / 2) + 'px';
+            lens.style.top = (mouseY - lens.offsetHeight / 2) + 'px';
+
+            const origX = (mouseX - panOffset.x) / zoomScale;
+            const origY = (mouseY - panOffset.y) / zoomScale;
+
+            const bgW = baseImage.width * zoomScale * lensZoom;
+            const bgH = baseImage.height * zoomScale * lensZoom;
+            lens.style.backgroundSize = `${bgW}px ${bgH}px`;
+
+            const bgX = (origX * zoomScale * lensZoom) - (lens.offsetWidth / 2);
+            const bgY = (origY * zoomScale * lensZoom) - (lens.offsetHeight / 2);
+            lens.style.backgroundPosition = `-${bgX}px -${bgY}px`;
+        } else if (isLensMode && lens) {
+            lens.style.display = 'none';
+        }
+    });
+
+    window.addEventListener('mouseup', function() {
+        if (isPanning) {
+            isPanning = false;
+            canvasWrapper?.classList.remove('grabbing');
+        }
+    });
+
+    function saveCurrentLineData(moveToNext = false) {
+        if (!isAdmin) {
+            showToast('Увійдіть як автор для збереження змін', true);
+            return;
+        }
+        if (selectedLineIndex === null || !currentLines[selectedLineIndex]) return;
+        
+        const selector = document.getElementById('page-selector');
+        const pageId = selector?.value;
+        const line = currentLines[selectedLineIndex];
+        const chosenEntityType = document.getElementById('input-entity-type')?.value || 'person';
+        const chosenHand = document.getElementById('input-hand')?.value || 'h1';
+        const isDuplicate = document.getElementById('input-is-duplicate')?.checked || false;
+
+        const payload = {
+            page_id: pageId,
+            line_id: line.line_id,
+            entity_type: chosenEntityType,
+            hand: chosenHand,
+            is_duplicate: isDuplicate,
+            text: document.getElementById('input-raw-text')?.value.trim() || '',
+            lemma: document.getElementById('input-lemma')?.value.trim() || '',
+            gender: (chosenEntityType === 'place' || chosenEntityType === 'status') ? '' : document.getElementById('input-gender')?.value || '',
+            role: (chosenEntityType === 'place' || chosenEntityType === 'status') ? '' : document.getElementById('input-role')?.value || ''
+        };
+
+        fetch('/api/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.status === 'success') {
+                line.entity_type = payload.entity_type;
+                line.hand = payload.hand;
+                line.is_duplicate = payload.is_duplicate;
+                line.text = payload.text;
+                line.lemma = payload.lemma;
+                line.gender = payload.gender;
+                line.role = payload.role;
+
+                const globalItem = allEntitiesData.find(it => it.line_id === line.line_id);
+                if (globalItem) {
+                    globalItem.text = payload.text;
+                    globalItem.lemma = payload.lemma;
+                    globalItem.entity_type = payload.entity_type;
+                    globalItem.hand = payload.hand;
+                    globalItem.is_duplicate = payload.is_duplicate;
+                    renderGlobalIndex();
+                }
+
+                if (payload.lemma && payload.entity_type === 'person') {
+                    const lKey = payload.lemma.trim().toLowerCase();
+                    if (!lemmaDictionary[lKey]) {
+                        lemmaDictionary[lKey] = payload.gender;
+                        const opt = document.createElement('option');
+                        opt.value = payload.lemma.trim();
+                        document.getElementById('lemmas-datalist')?.appendChild(opt);
+                    }
+                }
+
+                renderTable();
+                showToast(`Збережено: "${line.text}" [${payload.hand}] → ${payload.lemma || '—'}`);
+
+                if (moveToNext && selectedLineIndex < currentLines.length - 1) {
+                    selectLine(selectedLineIndex + 1);
+                    document.getElementById(`row-${selectedLineIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else {
+                showToast(resData.message || 'Помилка збереження в XML.', true);
+            }
+        })
+        .catch(() => showToast('Мережева помилка збереження.', true));
+    }
+
+    function batchSaveCurrentLineData() {
+        if (!isAdmin) {
+            showToast('Увійдіть як автор для розмітки', true);
+            return;
+        }
+        if (selectedLineIndex === null || !currentLines[selectedLineIndex]) return;
+        
+        const line = currentLines[selectedLineIndex];
+        const targetText = line.text;
+        const lemmaVal = (document.getElementById('input-lemma')?.value || '').trim();
+        const chosenEntityType = document.getElementById('input-entity-type')?.value || 'person';
+
+        if (!lemmaVal) {
+            showToast('Вкажіть лему перед пакетною розміткою!', true);
+            return;
+        }
+
+        const payload = {
+            text: targetText,
+            entity_type: chosenEntityType,
+            lemma: lemmaVal,
+            gender: chosenEntityType === 'place' ? '' : document.getElementById('input-gender')?.value || '',
+            role: chosenEntityType === 'place' ? '' : document.getElementById('input-role')?.value || ''
+        };
+
+        fetch('/api/batch-save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(res => res.json())
+        .then(resData => {
+            if (resData.status === 'success') {
+                currentLines.forEach((l) => {
+                    if (l.text === targetText) {
+                        l.entity_type = payload.entity_type;
+                        l.lemma = payload.lemma;
+                        l.gender = payload.gender;
+                        l.role = payload.role;
+                    }
+                });
+
+                allEntitiesData.forEach(it => {
+                    if (it.text === targetText) {
+                        it.lemma = payload.lemma;
+                        it.entity_type = payload.entity_type;
+                    }
+                });
+                renderGlobalIndex();
+
+                if (payload.lemma && payload.entity_type === 'person') {
+                    const lKey = payload.lemma.trim().toLowerCase();
+                    if (!lemmaDictionary[lKey]) {
+                        lemmaDictionary[lKey] = payload.gender;
+                        const opt = document.createElement('option');
+                        opt.value = payload.lemma.trim();
+                        document.getElementById('lemmas-datalist')?.appendChild(opt);
+                    }
+                }
+
+                renderTable();
+                showToast(`⚡ Пакетно оновлено: "${targetText}" (${resData.updated_count} слів у рукописі!)`);
+            } else {
+                showToast('Помилка пакетного оновлення.', true);
+            }
+        })
+        .catch(() => showToast('Мережева помилка пакетного оновлення.', true));
+    }
+
+    window.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            e.preventDefault();
+            saveCurrentLineData(false);
+            return;
+        }
+
+        if (e.key === 'Enter' && (document.activeElement.id === 'input-lemma' || document.activeElement.id === 'input-raw-text')) {
+            e.preventDefault();
+            saveCurrentLineData(true);
+            return;
+        }
+
+        if (e.key === 'Escape') {
+            closeStatisticsModal();
+            closeCollationModal();
+            closeLoginModal();
+            closeFeedbackModal();
+        }
+
+        const isSearchField = ['global-search-input', 'global-filter-input', 'input-admin-password', 'fb-name', 'fb-email', 'fb-message'].includes(document.activeElement.id);
+        const isModalOpen = (document.getElementById('stat-modal')?.style.display === 'flex') || 
+                            (document.getElementById('collation-modal')?.style.display === 'flex') || 
+                            (document.getElementById('login-modal')?.style.display === 'flex') ||
+                            (document.getElementById('feedback-modal')?.style.display === 'flex');
+
+        if (!isSearchField && !isModalOpen) {
+            if (e.key === 'ArrowDown') {
+                if (selectedLineIndex === null && currentLines.length > 0) {
+                    e.preventDefault();
+                    selectLine(0);
+                } else if (selectedLineIndex !== null && selectedLineIndex < currentLines.length - 1) {
+                    e.preventDefault();
+                    selectLine(selectedLineIndex + 1);
+                    document.getElementById(`row-${selectedLineIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            } else if (e.key === 'ArrowUp') {
+                if (selectedLineIndex !== null && selectedLineIndex > 0) {
+                    e.preventDefault();
+                    selectLine(selectedLineIndex - 1);
+                    document.getElementById(`row-${selectedLineIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            }
+        }
+    });
+
+    function navigatePage(direction) {
+        const selector = document.getElementById('page-selector');
+        if (!selector || selector.options.length === 0) return;
+        const currentIndex = selector.selectedIndex;
+        const maxIndex = selector.options.length - 1;
+        let newIndex = currentIndex;
+
+        if (direction === 'start') newIndex = 0;
+        else if (direction === 'end') newIndex = maxIndex;
+        else if (direction === 'prev') newIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+        else if (direction === 'next') newIndex = currentIndex < maxIndex ? currentIndex + 1 : maxIndex;
+
+        if (newIndex !== currentIndex) {
+            selector.selectedIndex = newIndex;
+            loadPageData();
+        }
+    }
+
+    function executeGlobalSearch() {
+        const query = (document.getElementById('global-search-input')?.value || '').trim();
+        if (!query) return;
+
+        fetch(`/api/global-search?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(results => {
+                const block = document.getElementById('global-search-results-block');
+                const tbody = document.getElementById('global-results-body');
+                if (!block || !tbody) return;
+                tbody.innerHTML = '';
+
+                if (results.length === 0) {
+                    showToast('Нічого не знайдено в рукописі.', true);
+                    block.style.display = 'none';
+                    return;
+                }
+
+                results.forEach(res => {
+                    const tr = document.createElement('tr');
+                    tr.style.cursor = 'pointer';
+                    tr.onclick = () => jumpToGlobalResult(res.page_id, res.line_id);
+                    const statusBadge = res.status_title ? `<span class="tag-badge tag-status" style="margin-right: 3px;">${res.status_title}</span>` : '';
+                    tr.innerHTML = `
+                        <td style="color: #0071e3; font-weight: bold;">${res.page_label}</td>
+                        <td>${statusBadge}<strong>${res.text}</strong></td>
+                        <td style="color: #86868b; font-style: italic;">${res.lemma || '—'}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+
+                block.style.display = 'block';
+            });
+    }
+
+    document.getElementById('global-search-input')?.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            executeGlobalSearch();
+        }
+    });
+
+    function jumpToGlobalResult(pageId, lineId) {
+        const selector = document.getElementById('page-selector');
+        if (!selector) return;
+        for (let i = 0; i < selector.options.length; i++) {
+            if (selector.options[i].value === pageId) {
+                selector.selectedIndex = i;
+                break;
+            }
+        }
+
+        const editorBlock = document.getElementById('editor-form-block');
+        if (editorBlock) editorBlock.style.display = 'none';
+        selectedLineIndex = null;
+
+        const selectedOption = selector.options[selector.selectedIndex] || selector.options[0];
+        if (!selectedOption) return;
+
+        const imgUrl = selectedOption.getAttribute('data-img');
+        const fNum = parseInt(selectedOption.getAttribute('data-folionum') || '1');
+
+        updateCodexIndicator(fNum);
+        checkParallelConcordance(selectedOption.text || '');
+
+        baseImage = new Image();
+        baseImage.src = `/static/images/${currentImageFolder}/${imgUrl}`;
+        baseImage.onload = () => {
+            fetch(`/api/page/${pageId}`)
+                .then(res => res.json())
+                .then(data => {
+                    currentLines = data || [];
+                    renderTable();
+                    
+                    const targetIndex = currentLines.findIndex(l => l.line_id === lineId);
+                    if (targetIndex !== -1) {
+                        selectLine(targetIndex);
+                        document.getElementById(`row-${targetIndex}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        drawCanvas(null);
+                    }
+                    resetZoomAndPan();
+                });
+        };
+    }
+
+    window.onload = () => {
+        loadCodexStructure();
+        loadPageData();
+        loadLemmasDictionary();
+        loadAllEntitiesIndex();
+    };
+
+    window.onresize = () => {
+        resetZoomAndPan();
+    };
+</script>
+
+</body>
+</html>

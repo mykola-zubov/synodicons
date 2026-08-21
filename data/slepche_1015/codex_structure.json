@@ -1,0 +1,163 @@
+{
+  "metadata": {
+    "title": "Слепченски кодик 1015",
+    "dating": "XVI–XVII ст.",
+    "archive": "НБКМ, № 1015",
+    "total_folios": 95,
+    "has_duplicate_copies": false
+  },
+  "categories": {
+    "intro": {
+      "label": "Вступні аркуші та правила",
+      "color": "#8e8e93",
+      "badge": "⚪ Вступ",
+      "count_in_deduplication": true
+    },
+    "archbishops": {
+      "label": "Записи архієпископів (Охридських)",
+      "color": "#d32f2f",
+      "badge": "🔴 Архієпископи",
+      "count_in_deduplication": true
+    },
+    "metropolitans": {
+      "label": "Записи митрополитів",
+      "color": "#ff3b30",
+      "badge": "🔴 Митрополити",
+      "count_in_deduplication": true
+    },
+    "bishops": {
+      "label": "Записи єпископів",
+      "color": "#ff9500",
+      "badge": "🟠 Єпископи",
+      "count_in_deduplication": true
+    },
+    "hieromonks": {
+      "label": "Пом'янник ієромонахів",
+      "color": "#5856d6",
+      "badge": "🟣 Ієромонахи",
+      "count_in_deduplication": true
+    },
+    "hierodeacons": {
+      "label": "Пом'янник ієродияконів",
+      "color": "#af52de",
+      "badge": "🟣 Ієродиякони",
+      "count_in_deduplication": true
+    },
+    "monks": {
+      "label": "Поминання монахів",
+      "color": "#0071e3",
+      "badge": "🔵 Монахи",
+      "count_in_deduplication": true
+    },
+    "nuns": {
+      "label": "Поминання монахинь",
+      "color": "#34c759",
+      "badge": "🟢 Монахині",
+      "count_in_deduplication": true
+    },
+    "priests_and_lay": {
+      "label": "Список ієреїв та приписки мирян",
+      "color": "#5ac8fa",
+      "badge": "⚪ Ієреї та миряни",
+      "count_in_deduplication": true
+    }
+  },
+  "sections": [
+    {
+      "id": "sec_intro",
+      "title": "Вступні аркуші та правила поминання",
+      "category": "intro",
+      "folio_start_num": 1,
+      "folio_end_num": 3,
+      "header_type": "Вступ",
+      "scribe": "Основний писець"
+    },
+    {
+      "id": "sec_archbishops",
+      "title": "Заголовок записів архієпископів",
+      "category": "archbishops",
+      "folio_start_num": 4,
+      "folio_end_num": 6,
+      "header_type": "Архієпископи",
+      "scribe": "Основний писець"
+    },
+    {
+      "id": "sec_metropolitans",
+      "title": "Заголовок записів митрополитів",
+      "category": "metropolitans",
+      "folio_start_num": 7,
+      "folio_end_num": 9,
+      "header_type": "Митрополити",
+      "scribe": "Основний писець"
+    },
+    {
+      "id": "sec_bishops",
+      "title": "Заголовок записів єпископів",
+      "category": "bishops",
+      "folio_start_num": 10,
+      "folio_end_num": 14,
+      "header_type": "Єпископи",
+      "scribe": "Основний писець"
+    },
+    {
+      "id": "sec_hieromonks",
+      "title": "Заголовок ієромонахів",
+      "category": "hieromonks",
+      "folio_start_num": 15,
+      "folio_end_num": 40,
+      "header_type": "Ієромонахи",
+      "scribe": "Основний писець"
+    },
+    {
+      "id": "sec_hierodeacons",
+      "title": "Заголовок ієродияконів",
+      "category": "hierodeacons",
+      "folio_start_num": 41,
+      "folio_end_num": 46,
+      "header_type": "Ієродиякони",
+      "scribe": "Основний писець"
+    },
+    {
+      "id": "sec_monks",
+      "title": "Заголовок поминання монахів",
+      "category": "monks",
+      "folio_start_num": 47,
+      "folio_end_num": 70,
+      "header_type": "Монахи",
+      "scribe": "Основний писець"
+    },
+    {
+      "id": "sec_nuns",
+      "title": "Заголовок поминання монахинь",
+      "category": "nuns",
+      "folio_start_num": 71,
+      "folio_end_num": 78,
+      "header_type": "Монахині",
+      "scribe": "Основний писець"
+    },
+    {
+      "id": "sec_priests_lay",
+      "title": "Беззаголовочний список ієреїв та приписки мирян",
+      "category": "priests_and_lay",
+      "folio_start_num": 79,
+      "folio_end_num": 95,
+      "header_type": "Без заголовка",
+      "scribe": "Основний писець та приписки"
+    }
+  ],
+  "parallel_concordance": [],
+  "page_overrides": {
+    "661a": {
+      "label": "61a",
+      "folio_num": 61
+    },
+    "661a–62a": {
+      "label": "61a–62a",
+      "folio_num": 61
+    },
+    "60b–661a": {
+      "label": "60b–61a",
+      "folio_num": 60
+    }
+  }
+}
