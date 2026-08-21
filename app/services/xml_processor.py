@@ -93,7 +93,6 @@ class XmlProcessor:
         self._ensure_initial_backup()
 
     def _load_structure(self):
-        # Шукаємо codex_structure.json у папці манускрипту або у корені data
         struct_path = os.path.join(os.path.dirname(self.xml_path), 'codex_structure.json')
         if not os.path.exists(struct_path):
             struct_path = os.path.join(os.path.dirname(os.path.dirname(self.xml_path)), 'codex_structure.json')
@@ -243,7 +242,7 @@ class XmlProcessor:
         return pages
 
     def get_page_data(self, page_id):
-        """Зчитує рядки сторінки з повною безпекою для вступних і нерозмічених сторінок."""
+        """Зчитує рядки сторінки з точним зональним співвіднесенням (Line-to-Zone Matching)."""
         lines_data = []
         geo_map = {}
         folio_map = {}
@@ -251,22 +250,17 @@ class XmlProcessor:
         surfaces = self.root.xpath('//*[local-name()="surface"]')
         current_surface = None
         for surf in surfaces:
-            surf_id = surf.get('{http://www.w3.org/XML/1998/namespace}id') or \
-                      surf.get('{http://w3.org}id') or \
-                      surf.get('id') or \
-                      surf.get('xml:id')
+            surf_id = surf.get('{http://www.w3.org/XML/1998/namespace}id') or surf.get('id') or surf.get('xml:id')
             if surf_id == page_id:
                 current_surface = surf
                 break
 
-        # Якщо аркуш створено віртуально (немає в XML) — повертаємо порожній список без помилок
         if current_surface is None:
             return lines_data
 
         orig_w = 0
         orig_h = 0
 
-        # 1. Читаємо розміри з graphic
         for gr in current_surface.xpath('.//*[local-name()="graphic"]'):
             w_str = (gr.get('width') or '').replace('px', '').strip()
             h_str = (gr.get('height') or '').replace('px', '').strip()
@@ -278,7 +272,6 @@ class XmlProcessor:
                 except Exception:
                     pass
 
-        # 2. Якщо в graphic немає — читаємо з surface lrx/lry
         if orig_w == 0:
             lrx = current_surface.get('lrx')
             lry = current_surface.get('lry')
@@ -289,6 +282,7 @@ class XmlProcessor:
                 except Exception:
                     pass
 
+        # Збираємо зони ліній ТІЛЬКИ цього аркуша
         text_regions = current_surface.xpath('.//*[local-name()="zone"][@rendition="TextRegion"]')
         for tr in text_regions:
             tr_subtype = tr.get('subtype') or ''
@@ -313,35 +307,34 @@ class XmlProcessor:
             orig_w = 4928
             orig_h = 3264
 
-        pb_elements = self.root.xpath('//*[local-name()="pb"]')
-        target_pb = None
-        for pb in pb_elements:
-            facs_ref = pb.get('facs', '')
-            if facs_ref == f"#{page_id}" or facs_ref == page_id:
-                target_pb = pb
-                break
-
-        if target_pb is None:
+        # Якщо на цьому скані взагалі немає ліній — повертаємо порожній список
+        if not geo_map:
             return lines_data
 
-        parent_div = target_pb.getparent()
-        if parent_div is None:
-            return lines_data
-            
-        lb_elements = parent_div.xpath('.//*[local-name()="lb"]')
+        # Вибираємо <lb>, які належать САМЕ до зон цього аркуша
+        all_lbs = self.root.xpath('//*[local-name()="lb"]')
         valid_lbs = []
-        started = False
-        for child in parent_div.iter():
-            if child == target_pb:
-                started = True
-                continue
-            if started and child.tag.split('}')[-1] == 'pb':
-                break
-            if started and child.tag.split('}')[-1] == 'lb':
-                valid_lbs.append(child)
+        for lb in all_lbs:
+            facs_ref = (lb.get('facs') or '').replace('#', '')
+            if facs_ref in geo_map:
+                valid_lbs.append(lb)
 
+        # Якщо точного збігу не знайдено, перевіряємо по pb
         if not valid_lbs:
-            valid_lbs = lb_elements
+            pb_elements = self.root.xpath(f'//*[local-name()="pb"][@facs="#{page_id}" or @facs="{page_id}"]')
+            if pb_elements:
+                target_pb = pb_elements[0]
+                parent_div = target_pb.getparent()
+                if parent_div is not None:
+                    started = False
+                    for child in parent_div.iter():
+                        if child == target_pb:
+                            started = True
+                            continue
+                        if started and child.tag.split('}')[-1] == 'pb':
+                            break
+                        if started and child.tag.split('}')[-1] == 'lb':
+                            valid_lbs.append(child)
 
         for lb in valid_lbs:
             facs_ref = (lb.get('facs') or '').replace('#', '')
@@ -412,13 +405,14 @@ class XmlProcessor:
     def update_entity(self, page_id, line_id, data):
         pb_elements = self.root.xpath(f'//*[local-name()="pb"][@facs="#{page_id}" or @facs="{page_id}"]')
         if not pb_elements:
-            return False
-            
-        lb_elements = pb_elements[0].xpath(f'./following-sibling::*//*[local-name()="lb"][@facs="#{line_id}" or @facs="{line_id}"]')
-        if not lb_elements:
             lb_elements = self.root.xpath(f'//*[local-name()="lb"][@facs="#{line_id}" or @facs="{line_id}"]')
+        else:
+            lb_elements = pb_elements[0].xpath(f'./following-sibling::*//*[local-name()="lb"][@facs="#{line_id}" or @facs="{line_id}"]')
             if not lb_elements:
-                return False
+                lb_elements = self.root.xpath(f'//*[local-name()="lb"][@facs="#{line_id}" or @facs="{line_id}"]')
+            
+        if not lb_elements:
+            return False
             
         lb = lb_elements[0]
         sibling = lb.getnext()
