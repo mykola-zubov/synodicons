@@ -146,9 +146,9 @@
         </select>
     </div>
 
-    <!-- Кнопки довідки, статистики, словників та авторизації -->
+<!-- Кнопки довідки, статистики, словників та автора -->
     <div style="display: flex; align-items: center; gap: 5px;">
-        <a id="btn-author-link" href="#" style="text-decoration: none;">
+        <a href="/docs/about_author" style="text-decoration: none;">
             <button class="btn-secondary" style="font-weight: 600; color: #5856d6;" title="Інформація про автора та дослідження">👨‍🏫 Про автора</button>
         </a>
 
@@ -157,17 +157,24 @@
         </a>
 
         <button onclick="openStatisticsModal()" class="btn-secondary" title="Статистика пам'ятки">📊 Статистика</button>
-        
-        <a id="btn-guide-link" href="#" style="text-decoration: none;">
+
+        <a href="/docs/user_guide" style="text-decoration: none;">
             <button class="btn-secondary" title="Відкрити інструкцію користувача">ℹ️ Інструкція</button>
         </a>
 
         <button onclick="openFeedbackModal()" class="btn-secondary" style="font-weight: 600;" title="Надіслати відгук чи пропозицію автору">✉️ Зв'язок</button>
 
+        <!-- Кнопки експорту (видимі ТІЛЬКИ для вас після входу) -->
         {% if is_admin %}
-        <button onclick="logoutAdmin()" class="btn-secondary" style="color: #34c759; font-weight: 600;" title="Ви увійшли як автор (редагування увімкнено)">🔓 Вихід</button>
+        <a id="btn-export-anthro" href="#" style="text-decoration: none;">
+            <button class="btn-secondary" style="font-weight: 600; color: #0071e3;" title="Частотний словник антропонімів (доступно автору)">📥 Словник імен</button>
+        </a>
+        <a id="btn-export-topo" href="#" style="text-decoration: none;">
+            <button class="btn-secondary" style="font-weight: 600; color: #2e7d32;" title="Словник топонімів (доступно автору)">🗺️ Топоніми</button>
+        </a>
+        <button onclick="logoutAdmin()" class="btn-secondary" style="color: #34c759; font-weight: 600;" title="Ви увійшли як автор">🔓 Вихід</button>
         {% else %}
-        <button onclick="openLoginModal()" class="btn-secondary" style="font-weight: 600;" title="Вхід для автора / редагування">🔑 Вхід</button>
+        <button onclick="openLoginModal()" class="btn-secondary" style="font-weight: 600;" title="Вхід для автора">🔑 Вхід</button>
         {% endif %}
     </div>
 
@@ -523,15 +530,19 @@
     let isLensMode = false;
     const lensZoom = 2.8;
 
-    function initDocLinks() {
+function initDocLinks() {
         const docLink = document.getElementById('btn-doc-link');
         const guideLink = document.getElementById('btn-guide-link');
         const authorLink = document.getElementById('btn-author-link');
+        const exportAnthro = document.getElementById('btn-export-anthro');
+        const exportTopo = document.getElementById('btn-export-topo');
         
         const msDocName = currentMsId === 'slepche_116' ? 'manuscript_odesa_116' : 'manuscript_sofia_1015';
         if (docLink) docLink.href = `${BASE_URL}/docs/${msDocName}`;
         if (guideLink) guideLink.href = `${BASE_URL}/docs/user_guide`;
         if (authorLink) authorLink.href = `${BASE_URL}/docs/about_author`;
+        if (exportAnthro) exportAnthro.href = `${BASE_URL}/api/export/anthroponyms`;
+        if (exportTopo) exportTopo.href = `${BASE_URL}/api/export/toponyms`;
     }
 
     function openFeedbackModal() {
