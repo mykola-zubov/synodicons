@@ -146,30 +146,29 @@
         </select>
     </div>
 
-<!-- Кнопки довідки, статистики, словників та автора -->
+<!-- Кнопки довідки, статистики та автора з точним шляхом /codicons -->
     <div style="display: flex; align-items: center; gap: 5px;">
-        <a href="/docs/about_author" style="text-decoration: none;">
+        <a id="btn-author-link" href="/codicons/docs/about_author" style="text-decoration: none;">
             <button class="btn-secondary" style="font-weight: 600; color: #5856d6;" title="Інформація про автора та дослідження">👨‍🏫 Про автора</button>
         </a>
 
-        <a id="btn-doc-link" href="#" style="text-decoration: none;">
+        <a id="btn-doc-link" href="/codicons/docs/manuscript_{{ current_ms.id.replace('slepche_', 'odesa_' if current_ms.id == 'slepche_116' else 'sofia_') }}" style="text-decoration: none;">
             <button class="btn-secondary" style="font-weight: 600;" title="Науковий кодикологічний опис рукопису">📖 Про рукопис</button>
         </a>
 
         <button onclick="openStatisticsModal()" class="btn-secondary" title="Статистика пам'ятки">📊 Статистика</button>
 
-        <a href="/docs/user_guide" style="text-decoration: none;">
+        <a id="btn-guide-link" href="/codicons/docs/user_guide" style="text-decoration: none;">
             <button class="btn-secondary" title="Відкрити інструкцію користувача">ℹ️ Інструкція</button>
         </a>
 
         <button onclick="openFeedbackModal()" class="btn-secondary" style="font-weight: 600;" title="Надіслати відгук чи пропозицію автору">✉️ Зв'язок</button>
 
-        <!-- Кнопки експорту (видимі ТІЛЬКИ для вас після входу) -->
         {% if is_admin %}
-        <a id="btn-export-anthro" href="#" style="text-decoration: none;">
+        <a id="btn-export-anthro" href="/codicons/api/export/anthroponyms" style="text-decoration: none;">
             <button class="btn-secondary" style="font-weight: 600; color: #0071e3;" title="Частотний словник антропонімів (доступно автору)">📥 Словник імен</button>
         </a>
-        <a id="btn-export-topo" href="#" style="text-decoration: none;">
+        <a id="btn-export-topo" href="/codicons/api/export/toponyms" style="text-decoration: none;">
             <button class="btn-secondary" style="font-weight: 600; color: #2e7d32;" title="Словник топонімів (доступно автору)">🗺️ Топоніми</button>
         </a>
         <button onclick="logoutAdmin()" class="btn-secondary" style="color: #34c759; font-weight: 600;" title="Ви увійшли як автор">🔓 Вихід</button>
