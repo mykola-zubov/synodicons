@@ -418,8 +418,11 @@ def collation_api():
         'aligned_rows': aligned_rows
     })
 
+from markdown.extensions.toc import slugify_unicode
+
 @main_bp.route('/docs/<doc_name>')
 def show_docs(doc_name):
+    """Відображає файли документації з повною підтримкою кириличних якорів та виносок."""
     doc_path = os.path.join(BASE_DIR, 'docs', f"{doc_name}.md")
     if not os.path.exists(doc_path):
         return f"Документ {doc_name}.md не знайдено", 404
@@ -427,5 +430,14 @@ def show_docs(doc_name):
     with open(doc_path, 'r', encoding='utf-8') as f:
         md_text = f.read()
         
-    html_content = markdown.markdown(md_text, extensions=['tables', 'fenced_code', 'toc', 'footnotes'])
+    # Увімкнено підтримку українських/македонських літер у посиланнях змісту
+    html_content = markdown.markdown(
+        md_text, 
+        extensions=['tables', 'fenced_code', 'toc', 'footnotes'],
+        extension_configs={
+            'toc': {
+                'slugify': slugify_unicode
+            }
+        }
+    )
     return render_template('doc_page.html', content=html_content)
