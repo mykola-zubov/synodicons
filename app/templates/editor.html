@@ -1915,37 +1915,67 @@ async function handleFeedbackSubmit(event) {
   btn.disabled = true;
   btn.textContent = "Надсилання...";
 
+  const name = document.getElementById('fb_name').value;
+  const email = document.getElementById('fb_email').value;
+  const affiliation = document.getElementById('fb_affiliation').value || "Не вказано";
+  const context = document.getElementById('fb_context').value || "Кодекс";
+  const targetWord = document.getElementById('fb_target').value || "—";
+  const comment = document.getElementById('fb_comment').value;
+
   const payload = {
-    name: document.getElementById('fb_name').value,
-    email: document.getElementById('fb_email').value,
-    affiliation: document.getElementById('fb_affiliation').value,
-    manuscript_context: document.getElementById('fb_context').value,
-    target_word: document.getElementById('fb_target').value,
-    comment: document.getElementById('fb_comment').value
+    "name": name,
+    "email": email,
+    "affiliation": affiliation,
+    "manuscript_context": context,
+    "target_word": targetWord,
+    "comment": comment
   };
 
   try {
-    const response = await fetch("{{ url_for('main.submit_feedback') }}", {
+    // 1. Зберігаємо копію на сервері Flask
+    fetch("{{ url_for('main.submit_feedback') }}", {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
+    }).catch(e => console.log("Резервне збереження offline"));
+
+    // 2. Відправляємо лист НАПРЯМУ з браузера на ваш Gmail
+    const mailResponse = await fetch("https://formsubmit.co/ajax/nikolaji.zubov@gmail.com", {
+      method: "POST",
+      headers: { 
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        "_subject": `🔔 Пропозиція до Синодика: ${context}`,
+        "_replyto": email,
+        "Ім'я автора": name,
+        "Email для відповіді": email,
+        "Афіліація": affiliation,
+        "Кодекс / Аркуш": context,
+        "Слово / Лема": targetWord,
+        "Текст зауваження": comment
+      })
     });
 
-    const res = await response.json();
-    if (response.ok && res.status === 'success') {
-      alert("✅ " + res.message);
+    const result = await mailResponse.json();
+
+    if (mailResponse.ok) {
+      alert("✅ Дякуємо! Ваша пропозиція успішно надіслана професору М. Зубову.");
       document.getElementById('feedbackForm').reset();
       closeFeedbackModal();
     } else {
-      alert("❌ " + (res.message || "Сталася помилка"));
+      alert("❌ Помилка відправки: " + (result.message || "Спробуйте ще раз"));
     }
+
   } catch (err) {
-    alert("❌ Помилка з'єднання із сервером.");
+    alert("❌ Помилка з'єднання з поштовим сервісом.");
   } finally {
     btn.disabled = false;
     btn.textContent = "Надіслати";
   }
 }
+
 </script>
 <!-- ========================================================================= -->
 </body>
