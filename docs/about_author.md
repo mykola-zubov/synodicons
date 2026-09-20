@@ -1,5 +1,5 @@
 # Про автора проєкту
-<img src="/static/images/author.png" alt="Микола Зубов" style="width: 120px; float: left; margin: 0 20px 15px 0; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+<img src="/codicons/static/images/author.png" alt="Микола Зубов" style="width: 120px; float: left; margin: 0 20px 15px 0; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
 **Автор проєкту:** Микола Зубов  
 **Науковий ступінь, звання:** Доктор філологічних наук, професор  
 **Alma mater:** Одеський державний (нині національний) університет ім. І. І. Мечникова  
