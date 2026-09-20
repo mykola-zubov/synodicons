@@ -3,6 +3,7 @@ import re
 import csv
 import io
 import json
+import urllib.request
 import difflib
 import markdown
 from datetime import datetime
@@ -441,3 +442,63 @@ def show_docs(doc_name):
         }
     )
     return render_template('doc_page.html', content=html_content)
+# --- Зворотний зв'язок та пропозиції на пошту автора ---
+SUGGESTIONS_FILE = os.path.join(os.path.dirname(__file__), '../data/suggestions.json')
+MY_EMAIL = "nikolaji.zubov@gmail.com"
+
+@main_bp.route('/api/submit_feedback', methods=['POST'])
+def submit_feedback():
+    try:
+        data = request.get_json() or request.form
+        
+        name = data.get("name", "").strip()
+        email = data.get("email", "").strip()
+        affiliation = data.get("affiliation", "").strip() or "Не вказано"
+        context = data.get("manuscript_context", "").strip() or "Загальне повідомлення"
+        target_word = data.get("target_word", "").strip() or "—"
+        comment = data.get("comment", "").strip()
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        
+        # 1. Резервне збереження на сервері в JSON
+        entry = {
+            "date": timestamp, "name": name, "email": email,
+            "affiliation": affiliation, "context": context,
+            "target_word": target_word, "comment": comment
+        }
+        suggestions = []
+        if os.path.exists(SUGGESTIONS_FILE):
+            try:
+                with open(SUGGESTIONS_FILE, 'r', encoding='utf-8') as f:
+                    suggestions = json.load(f)
+            except Exception:
+                suggestions = []
+        suggestions.insert(0, entry)
+        
+        os.makedirs(os.path.dirname(SUGGESTIONS_FILE), exist_ok=True)
+        with open(SUGGESTIONS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(suggestions, f, ensure_ascii=False, indent=2)
+
+        # 2. Відправка листа на ваш Gmail через вбудований urllib
+        email_payload = json.dumps({
+            "_subject": f"🔔 Пропозиція до Синодика: {context}",
+            "_replyto": email,
+            "Автор пропозиції": name,
+            "Афіліація": affiliation,
+            "Email для зв'язку": email,
+            "Кодекс і аркуш": context,
+            "Слово / Лема": target_word,
+            "Коментар": comment,
+            "Дата": timestamp
+        }).encode('utf-8')
+        
+        req = urllib.request.Request(
+            f"https://formsubmit.co/ajax/{MY_EMAIL}",
+            data=email_payload,
+            headers={'Content-Type': 'application/json', 'User-Agent': 'Mozilla/5.0'}
+        )
+        urllib.request.urlopen(req, timeout=10)
+
+        return jsonify({"status": "success", "message": "Дякуємо! Ваша пропозиція надіслана професору М. Зубову."}), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Помилка: {str(e)}"}), 500

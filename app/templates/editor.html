@@ -1825,5 +1825,128 @@ function initDocLinks() {
     };
 </script>
 
+<!-- ================= МОДАЛЬНЕ ВІКНО: ЗВ'ЯЗОК / ПРОПОЗИЦІЇ ================= -->
+<div id="feedbackModal" style="display:none; position:fixed; z-index:99999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center;">
+  <div style="background:#ffffff; width:92%; max-width:540px; border-radius:10px; padding:25px; box-shadow:0 10px 25px rgba(0,0,0,0.3); font-family:inherit; position:relative; box-sizing:border-box;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
+      <h3 style="margin:0; font-size:1.2rem; color:#2c3e50;">✉️ Пропозиція / Зворотний зв'язок</h3>
+      <button type="button" onclick="closeFeedbackModal()" style="border:none; background:none; font-size:1.6rem; cursor:pointer; color:#888; line-height:1;">&times;</button>
+    </div>
+
+    <form id="feedbackForm" onsubmit="handleFeedbackSubmit(event)">
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:10px;">
+        <div>
+          <label style="font-size:0.85rem; font-weight:600; color:#444;">Ваше ім'я:</label>
+          <input type="text" id="fb_name" required placeholder="Ім'я та прізвище" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; margin-top:4px;">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; font-weight:600; color:#444;">Ваш Email:</label>
+          <input type="email" id="fb_email" required placeholder="name@domain.com" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; margin-top:4px;">
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <label style="font-size:0.85rem; font-weight:600; color:#444;">Афіліація / Заклад (необов'язково):</label>
+        <input type="text" id="fb_affiliation" placeholder="Наприклад: ОНУ імені І. І. Мечникова" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; margin-top:4px;">
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:10px;">
+        <div>
+          <label style="font-size:0.85rem; font-weight:600; color:#444;">Поточний кодекс та аркуш:</label>
+          <input type="text" id="fb_context" readonly style="width:100%; padding:8px; background:#f4f4f4; border:1px solid #ddd; border-radius:4px; box-sizing:border-box; margin-top:4px; color:#555;">
+        </div>
+        <div>
+          <label style="font-size:0.85rem; font-weight:600; color:#444;">Слово / Рядок / Лема:</label>
+          <input type="text" id="fb_target" placeholder="Напр. рядок N003: iwсіфа" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; margin-top:4px;">
+        </div>
+      </div>
+
+      <div style="margin-bottom:15px;">
+        <label style="font-size:0.85rem; font-weight:600; color:#444;">Зміст пропозиції / коментар:</label>
+        <textarea id="fb_comment" required rows="3" placeholder="Опишіть зауваження, палеографічну деталь або варіант читання..." style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; box-sizing:border-box; margin-top:4px; resize:vertical; font-family:inherit;"></textarea>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px;">
+        <button type="button" onclick="closeFeedbackModal()" style="padding:8px 16px; border:1px solid #ccc; background:#f1f1f1; border-radius:4px; cursor:pointer;">Скасувати</button>
+        <button type="submit" id="fb_submit_btn" style="padding:8px 20px; background:#2980b9; color:#fff; border:none; border-radius:4px; cursor:pointer; font-weight:600;">Надіслати</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+// Відкриття вікна з автоматичним визначенням поточного рукопису
+function openFeedbackModal() {
+  const modal = document.getElementById('feedbackModal');
+  
+  // Автоматично беремо обраний кодекс і сторінку
+  const codexSelect = document.querySelector('select[name="codex"]') || document.querySelector('.codex-select');
+  const codexName = codexSelect ? (codexSelect.options ? codexSelect.options[codexSelect.selectedIndex].text : codexSelect.value) : 'Кодекс';
+  
+  const pageSelect = document.getElementById('pageSelect') || document.querySelector('select[name="page"]');
+  const pageName = pageSelect ? pageSelect.value : 'поточний аркуш';
+  
+  document.getElementById('fb_context').value = `${codexName} (арк. ${pageName})`;
+  modal.style.display = 'flex';
+}
+
+function closeFeedbackModal() {
+  document.getElementById('feedbackModal').style.display = 'none';
+}
+
+// Прив'язка до кнопки "✉️ Зв'язок" у шапці
+document.addEventListener('DOMContentLoaded', () => {
+  const allBtns = document.querySelectorAll('button, a');
+  allBtns.forEach(el => {
+    if (el.textContent && el.textContent.includes("Зв'язок")) {
+      el.onclick = (e) => {
+        e.preventDefault();
+        openFeedbackModal();
+      };
+    }
+  });
+});
+
+// Відправка форми у Flask
+async function handleFeedbackSubmit(event) {
+  event.preventDefault();
+  const btn = document.getElementById('fb_submit_btn');
+  btn.disabled = true;
+  btn.textContent = "Надсилання...";
+
+  const payload = {
+    name: document.getElementById('fb_name').value,
+    email: document.getElementById('fb_email').value,
+    affiliation: document.getElementById('fb_affiliation').value,
+    manuscript_context: document.getElementById('fb_context').value,
+    target_word: document.getElementById('fb_target').value,
+    comment: document.getElementById('fb_comment').value
+  };
+
+  try {
+    const response = await fetch("{{ url_for('main.submit_feedback') }}", {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const res = await response.json();
+    if (response.ok && res.status === 'success') {
+      alert("✅ " + res.message);
+      document.getElementById('feedbackForm').reset();
+      closeFeedbackModal();
+    } else {
+      alert("❌ " + (res.message || "Сталася помилка"));
+    }
+  } catch (err) {
+    alert("❌ Помилка з'єднання із сервером.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Надіслати";
+  }
+}
+</script>
+<!-- ========================================================================= -->
 </body>
 </html>
